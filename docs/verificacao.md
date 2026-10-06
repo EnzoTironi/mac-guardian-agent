@@ -1,43 +1,53 @@
-# Verificação
+# Verificação da versão 0.2.0
 
-O teste local do helper passou em 16 casos. Ele cobre arquivos recentes,
-cache em uso, alteração depois do plano, plano expirado, links simbólicos,
-projeto Git alterado, metadados de app malformados e reversão de organização.
+Os 52 testes locais passaram. Eles exercitam limpeza com revalidação de idade,
+conteúdo e arquivos em uso; preservação de projetos, links e worktrees; escrita
+privada; backup com Git real, clone independente e restauração antes de offload.
+Também cobrem organização física, nomes iguais, interrupção entre link e remoção,
+reversão de nomes e locais, índices que preservam páginas pessoais, exclusão de
+Documents e aliases cloud, atualizações verificadas, pausa e filas de revisão.
 
-Os testes de backup usam Git de verdade com um remoto temporário. Eles validam
-restauração antes de offload, recusa de repositório público e preservação do
-original diante de restauração corrompida. Worktrees com arquivos ignorados
-ou commits não enviados são preservados; um worktree antigo, limpo e com todos
-os commits no remoto é removido sem force.
+A renomeação foi testada com títulos Markdown, metadados Office, texto de PDF,
+OCR local e títulos de mídia. Datas inválidas são ignoradas. Conteúdo com possíveis
+segredos não aparece no contexto. O hash da análise precisa continuar igual na
+execução. Arquivos sem mudanças reutilizam observações; arquivos alterados são
+analisados novamente. Uma revisão concluída não volta à fila apenas porque o
+novo nome difere de uma sugestão mecânica.
 
-O build local da variante OpenClaw passou em Apple Silicon. O serviço Plow
-conectou à linha configurada e o proxy do painel respondeu HTTP 200.
-O teste de conversa pela CLI carregou a persona e a skill mac-health e retornou
-status ok, sem entregar mensagens a destinatários externos.
-O teste pela conversa do proprietário passou de ponta a ponta: o iMessage
-foi entregue, o OpenClaw invocou plow_run_command e o helper nativo check
-retornou exit_code 0 com métricas do Mac. A resposta chegou no iMessage.
-O primeiro comando omitiu o caminho de escrita da wiki e foi bloqueado; a nova
-invocação declarou esse caminho e passou. A skill agora explicita os dois
-diretórios de escrita. A execução completa pela ponte ainda exige validação;
-essa tentativa excedeu a espera do handle. Houve também um HTTP 500 transitório
-do provedor, recuperado pela repetição automática. As primeiras tentativas pela
-CLI tiveram falhas de descoberta/relay MCP. O LaunchAgent local funciona.
+scripts/demo_wiki.py executou maintain e undo em um diretório temporário com
+arquivos sintéticos. Cinco arquivos foram organizados; uma nota recebeu o nome
+pelo título. Os cinco voltaram aos nomes e locais originais, com hashes iguais.
+Um projeto e um arquivo recente permaneceram no lugar. A imagem e o vídeo da
+versão 0.2 mostram essas saídas reais no navegador. O vídeo é uma gravação da
+navegação pelos resultados, sem documentos pessoais ou atualização de apps.
+Tesseract foi executado sobre a imagem e reconheceu o nome derivado do título.
 
-O script nativo foi executado no Mac real. Foram coletados inventários, realizada
-uma limpeza limitada a cache antigo, organizada uma seleção de arquivos antigos
-e validado um backup privado da wiki por clone independente.
-Os detalhes e caminhos pessoais ficam somente nos relatórios privados.
+No Mac real, a wiki foi movida para ~/Wiki. Documents e as raízes cloud estão
+excluídas da política. Um ciclo da versão 0.2 organizou 100 arquivos, renomeou
+43 e verificou três atualizações de pacotes. Cada movimentação tem um journal;
+esses arquivos pessoais não aparecem nas evidências públicas. A auditoria
+completa local foi atualizada; fontes de atualização desconhecidas continuam
+pendentes e assinaturas não são um veredito antimalware.
 
-O proprietário autorizou o nome Mac Guardian. O slug de publicação é
-mac-guardian e a descrição resume as funções solicitadas. A configuração da
-publicação fica fora do Git. O reporter oficial é habilitado quando AGENT_ID
-está definido. Cadastro, telemetria, imagem pública, deploy de um clique e
-saída de WIP exigem confirmações independentes; consulte o registro da publicação.
-O GitHub Actions não iniciou o runner. A anotação do GitHub informa pagamentos
-recentes falhos ou limite de gastos. Os testes locais permanecem a evidência
-executada; não há confirmação de CI verde.
+Os dois LaunchAgents executam maintain a cada 15 minutos e check --full às
+09:10. A rotina nativa continua sem Docker. Ela preserva a política e o estado
+nas reinstalações. O acompanhamento por modelo investiga as filas sem enviar
+relatórios de rotina ou pedir aprovação para cada tarefa já autorizada.
 
-As imagens e o vídeo deste PR mostram uma interface real com inventário
-ilustrativo. As métricas de disco e memória foram medidas no Mac. A navegação
-do vídeo foi capturada pelo navegador; os nomes e caminhos pessoais não aparecem.
+OpenClaw retornou health ok. O teste de experiência pela CLI, sem ferramentas
+nem entrega a contatos, respondeu em português sobre manutenção automática,
+wiki fora de Documents, nomes pelo conteúdo e interação apenas nas exceções.
+O boot Plow e o reporter oficial de cinco minutos permanecem herdados da base;
+a identidade de telemetria foi preservada na recriação do contêiner.
+
+O teste anterior pela conversa do proprietário passou de ponta a ponta:
+iMessage, comando nativo por Latch com exit code 0 e resposta na conversa.
+A auditoria completa por essa ponte permanece sem validação: uma tentativa
+anterior excedeu a espera do handle. A auditoria local não prova essa integração.
+Restrições de fixture e permissões do Latch continuam sendo respeitadas.
+
+O workflow de GitHub Actions executa a mesma suíte em Python 3.12 no Ubuntu.
+A execução da versão 0.1 passou; o resultado do commit atual fica nos checks do
+PR. Imagens e vídeos de revisão são anexados com gh --attach. O código é MIT;
+relatórios, configurações de publicação e credenciais ficam fora do Git e Docker.
+Deploy de um clique e retirada de WIP dependem da equipe Plow.

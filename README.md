@@ -1,8 +1,10 @@
 # Mac Guardian
 
-Agente de manutenção de macOS baseado em OpenClaw e Plow. O OpenClaw conversa
-com o proprietário; Latch executa as operações no Mac; um coletor local mantém
-os relatórios mesmo quando o contêiner está parado.
+Agente de manutenção automática de macOS baseado em OpenClaw e Plow. Ele limpa
+conteúdo recriável, atualiza apps fechados e organiza os arquivos pessoais em
+uma wiki. O proprietário conversa quando quiser; a rotina trabalha em silêncio.
+Latch executa ações do OpenClaw no Mac e o componente local continua a manutenção
+mesmo quando o contêiner está parado. Não é necessário acompanhar um dashboard.
 
 O nome público é **Mac Guardian**, com slug `mac-guardian` no Agent Index.
 O código deste projeto é MIT. OpenClaw, Plow, Caddy, Mole e Vorssaint mantêm
@@ -10,16 +12,36 @@ suas próprias licenças. Mole e Vorssaint não são copiados nem distribuídos 
 
 ## O que funciona
 
-- Coleta de armazenamento, memória, swap, processos, carga e bateria a cada 15 minutos.
+- Rotina automática a cada 15 minutos, com armazenamento, memória, swap,
+  processos por CPU/RAM, carga, bateria e histórico de até 30 dias.
 - Auditoria diária às 09:10 no fuso configurado no Mac.
 - Inventário de apps, assinatura, Gatekeeper, Homebrew, App Store quando mas está instalado,
   serviços de inicialização e portas locais.
-- Wiki em Documents/MacWiki com o índice de todas as pastas do usuário.
-- Organização reversível de arquivos soltos antigos em Downloads e Desktop.
+- Organização física de arquivos estáveis de Downloads, Desktop e
+  da raiz pessoal em ~/Wiki, por categoria e assunto. Índices Markdown
+  ligam diretamente aos arquivos; assuntos existentes são preservados.
+- Renomeação por título e conteúdo de notas, PDFs, documentos Office, OCR local
+  de imagens e títulos de mídia. Casos ambíguos ficam para análise do agente.
+- Movimentos e renomeações reversíveis, recuperação após interrupção e nomes iguais preservados.
+- Atualizações automáticas verificadas de fontes Homebrew oficiais, até três
+  por ciclo, com apps e dependências em uso adiados. App Store via mas quando
+  disponível; instalações que exigem privilégio/autenticação podem depender do dono.
 - Limpeza de caches autorizados com idade mínima de 14 dias; artefatos de projetos
   com 30 dias, lockfile, Git limpo e nenhum arquivo aberto.
 - Backup em GitHub privado, com clone independente e SHA-256 antes de offload.
-- Painel HTML local e histórico de operações.
+- Relatórios privados em ~/Library/Application Support/MacGuardian/reports, fila persistente para investigação
+  de serviços alterados, diagnóstico do próprio agente e pausa por conversa.
+
+Por exemplo, Downloads/Viagens/Italia/roteiro.pdf passa para
+~/Wiki/Documentos/Viagens/Italia/roteiro.pdf. Uma nota untitled-3.md cujo título
+é “Planejamento da viagem — Itália” recebe planejamento-da-viagem-italia.md.
+Uma data explicitamente escrita no documento pode compor o nome.
+Um arquivo solto entra na
+categoria e no ano correspondente. A rotina aguarda duas horas sem alterações e
+verifica arquivos abertos; mantém projetos, vaults existentes, apps, bibliotecas,
+links e segredos nos seus caminhos. Documents, Library/Mobile Documents e
+Library/CloudStorage ficam excluídos, incluindo aliases que apontem para essas
+raízes. A wiki contém os arquivos organizados, além das páginas de navegação.
 
 A CLI inventaria worktrees e remove worktrees Git secundários antigos somente
 após atualizar remotos e verificar commits, alterações locais, arquivos ignorados
@@ -32,11 +54,20 @@ As verificações de assinatura e Gatekeeper não comprovam ausência de malware
 
 Requer macOS, Python 3.11 ou mais recente e Git. Homebrew, gh e Mole são opcionais
 para diagnóstico, mas gh autenticado é necessário para backup.
+Poppler (pdftotext), Tesseract e FFmpeg (ffprobe) habilitam os extratores locais:
+
+```sh
+brew install poppler tesseract ffmpeg
+```
+
+O helper funciona sem esses extratores; nomes que dependem deles ficam pendentes.
+O [Tesseract](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html)
+usa inglês por padrão. Outros idiomas dependem dos modelos locais instalados.
 Para o agente conversar e executar ações, é preciso Docker, Plow e Latch conectado
 ao Mac real. Uma instalação fixture do Latch não tem acesso operacional ao Mac.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
+git clone --branch v0.2.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
 cd mac-guardian-agent
 python3 -m unittest discover -s tests -v
 python3 scripts/install_native.py
@@ -76,8 +107,8 @@ docker compose logs -f agent
 
 Escolha uma linha livre; ln_p1 é apenas o exemplo deste setup.
 Abra http://localhost:3012 e envie uma mensagem para o número mostrado pela CLI.
-No primeiro pedido de rotina, o agente utiliza automations do Plow na conversa atual.
-O coletor nativo não depende dessa rotina de conversa.
+Para investigações por modelo, o agente reutiliza automations do Plow na conversa
+do proprietário. O componente nativo não depende dessa rotina de conversa.
 
 O contêiner herda o boot e o reporter da base OpenClaw oficial, fixada por digest.
 Com AGENT_ID definido, a base registra o índice e reporta uso real a cada cinco
@@ -89,15 +120,40 @@ Não monte o diretório pessoal, o socket Docker ou credenciais GitHub no contê
 
 ```sh
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" check
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" status
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" doctor
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" maintain --dry-run
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" maintain
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" plan
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" clean --apply
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" organize
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" organize --apply
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" rename --apply
 ```
 
 O plano de limpeza expira em uma hora. Arquivos recentes, diretórios substituídos,
 arquivos em uso e checagens inconclusivas são preservados. A organização retorna
-uma transação que pode ser revertida com undo.
+uma transação que pode ser revertida com undo. maintain retorna file_transaction
+para desfazer organização e nomes daquele ciclo. Para vários ciclos, desfaça
+do mais recente ao mais antigo.
+
+A renomeação mantém extensão e pasta, verifica conteúdo e arquivos em uso, e
+reconstrói os índices. O agente resolve pending_naming com naming-context e
+rename-file --path ARQUIVO --name NOME --sha256 HASH --evidence MOTIVO.
+Trechos são limitados, locais e privados; possíveis segredos não são retornados.
+Sem evidência de um nome melhor, o nome atual é preservado.
+
+Pela conversa: “como está o Mac?”, “o que ocupou espaço hoje?”, “pause por duas
+horas”, “retome a manutenção” ou “desfaça a última organização”. O agente usa
+status/history, pause/resume e o journal. Não pede nova autorização para a rotina
+já habilitada na política. Investiga exceções e só avisa quando houver risco
+confirmado, falta crítica persistente de espaço ou uma decisão do proprietário.
+
+O instalador habilita auto_cleanup, auto_organize, auto_name e auto_updates por padrão e
+preserva escolhas existentes. policy.json define raízes, idades, limites,
+file_wiki_root, health_wiki_root e os intervalos. Para manter um diagnóstico
+sem mutações, use pause. A meta de espaço livre prioriza limpeza; conteúdo
+recriável insuficiente exige outra estratégia, sem apagar documentos por impulso.
 
 Mole já oferece prévias oficiais:
 
@@ -114,16 +170,19 @@ como app nativo; esta versão não presume uma CLI de manutenção dele.
 ## Backup e offload
 
 Edite backup_roots na política para selecionar a pasta que será enviada.
-Crie um repositório privado inicializado. A wiki já é uma origem autorizada:
+Crie um repositório privado inicializado. O relatório de saúde já é uma origem autorizada:
 
 ```sh
 gh repo create SEU_USUARIO/mac-backups --private --add-readme
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" \
-  backup --source "$HOME/Documents/MacWiki" --repo SEU_USUARIO/mac-backups
+  backup --source "$HOME/Library/Application Support/MacGuardian/reports" --repo SEU_USUARIO/mac-backups
 ```
 
 Use --offload somente para uma pasta específica autorizada para exclusão.
-A wiki ativa tem backup, mas não pode ser excluída pelo offload.
+A wiki ativa e os relatórios não podem ser excluídos pelo offload.
+Configure backup_repo para o backup diário do relatório em health_wiki_root.
+Essa rotina não envia a wiki de arquivos pessoais inteira ao GitHub. Uma pasta
+de documentos ou projetos exige seleção em backup_roots antes do envio.
 Segredos, arquivos ocultos, links, hardlinks e arquivos maiores que 45 MiB
 bloqueiam esse fluxo. A inspeção de segredos é heurística: revise a origem.
 GitHub privado não substitui um backup completo nem criptografia de dados pessoais.
@@ -156,8 +215,8 @@ não equivalem à publicação ou à retirada de WIP.
 ## Dados e revisão
 
 private/, plow-credentials e .env ficam fora do Git e do contexto Docker.
-O painel real contém nomes e caminhos pessoais e permanece no Mac.
-Evidências destinadas à publicação devem usar o painel de demonstração sanitizado.
+Os relatórios reais contêm nomes e caminhos pessoais e permanecem no Mac.
+Evidências destinadas à publicação usam arquivos de exemplo e resultados de teste.
 PRs deste projeto recebem imagens e vídeos com gh --attach.
 
 Os testes exercitam limpeza, arquivos abertos, alterações depois do plano,

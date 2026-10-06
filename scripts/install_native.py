@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the Mac collector and launchd jobs. Does not install Docker or Plow."""
+"""Install automatic Mac maintenance and launchd jobs. Does not install Docker or Plow."""
 import argparse
 import json
 import os
@@ -31,6 +31,8 @@ app.chmod(0o700)
 logs = app / "logs"
 logs.mkdir(exist_ok=True, mode=0o700)
 helper = app / "mac_guardian.py"
+if helper.exists():
+    shutil.copy2(helper, app / "mac_guardian.previous.py")
 shutil.copy2(project / "native/mac_guardian.py", helper)
 helper.chmod(0o700)
 agents.mkdir(parents=True, exist_ok=True)
@@ -38,7 +40,8 @@ subprocess.run([sys.executable, str(helper), "init"], check=True)
 for label in labels:
     full = label.endswith("audit")
     job = {"Label": label,
-           "ProgramArguments": [sys.executable, str(helper), "check"] + (["--full"] if full else []),
+           "ProgramArguments": [sys.executable, str(helper), "check", "--full"] if full else
+                               [sys.executable, str(helper), "maintain"],
            "WorkingDirectory": str(app),
            "EnvironmentVariables": {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
                                     "HOMEBREW_NO_AUTO_UPDATE": "1"},
@@ -59,4 +62,4 @@ for label in labels:
     subprocess.run(["launchctl", "bootout", f"{domain}/{label}"], capture_output=True)
     subprocess.run(["launchctl", "bootstrap", domain, str(path)], check=True)
 print(json.dumps({"installed": str(helper), "jobs": labels,
-                  "wiki": str(home / "Documents/MacWiki/Home.md")}, ensure_ascii=False, indent=2))
+                  "mode": "automatic", "wiki": str(home / "Wiki/Home.md")}, ensure_ascii=False, indent=2))

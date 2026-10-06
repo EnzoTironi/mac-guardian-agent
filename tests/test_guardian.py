@@ -63,6 +63,18 @@ class GuardianTests(unittest.TestCase):
             self.g.clean(True)
         self.assertTrue(old.exists())
 
+    def test_same_size_rewrite_with_restored_mtime_cancels_deletion(self):
+        old = self.cache()
+        file = old / "reinstallable.txt"
+        stamp = file.stat().st_mtime
+        self.g.cleanup_plan()
+        file.write_text("X" * file.stat().st_size)
+        os.utime(file, (stamp, stamp))
+        with patch.object(m, "in_use", return_value=False):
+            result = self.g.clean(True)
+        self.assertTrue(file.exists())
+        self.assertFalse(result["items"][0]["removed"])
+
     def test_symlink_cannot_escape_cleanup(self):
         old = self.cache()
         outside = self.root / "precious"
@@ -90,13 +102,17 @@ class GuardianTests(unittest.TestCase):
         os.utime(source, (time.time() - 14 * m.DAY,) * 2)
         with patch.object(m, "in_use", return_value=False):
             result = self.g.organize(True)
-        dest = root / "Documentos/report.pdf"
+        dest = Path(result["items"][0]["destination"])
+        self.assertTrue(dest.is_relative_to(self.home / "Wiki/Documentos"))
         self.assertFalse(source.exists())
         self.assertEqual(dest.read_bytes(), b"private document")
         self.g.undo(result["transaction"])
         self.assertEqual(source.read_bytes(), b"private document")
         dest.write_bytes(b"existing")
-        self.assertEqual(self.g.organize()["items"], [])
+        with patch.object(m, "in_use", return_value=False):
+            duplicate = self.g.organize(True)
+        self.assertEqual(dest.read_bytes(), b"existing")
+        self.assertEqual(Path(duplicate["items"][0]["destination"]).read_bytes(), b"private document")
 
     def test_secret_names_and_contents_block_backup(self):
         source = self.home / "Archive"
