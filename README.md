@@ -10,6 +10,17 @@ project work on private GitHub branches and keeps secrets in a local Backup
 folder. Reversible work runs automatically. Procedures without guaranteed
 restoration require your approval.
 
+Its voice is warm, direct and practical. It answers useful requests first, takes
+the next authorized step, explains results briefly and stays quiet when there is
+nothing actionable. The personality follows the Plow base's
+[new default persona](https://github.com/plow-pbc/plow-openclaw-agent/blob/8644de7470f670086ef991787ae979ec8bb5e047/prompt/AGENTS.md),
+adapted to Mac care with concrete conversation examples. Style changes preserve
+storage choices, permissions and notification rules. This release updates the
+conversation prompt; the native maintenance worker remains v0.3.0. The upstream
+personality controls are still under review and are not included in this image.
+[Conversation fixtures and exact model responses](evidence/personality-v0.3.1.json)
+show the evaluated voice using fictional receipts, without external delivery.
+
 Built on the official Plow OpenClaw image. The native macOS worker continues
 while the conversation container is stopped. Public name: **Mac Guardian**;
 Agent Index slug: `mac-guardian`. This project's code is MIT. Upstream OpenClaw,
@@ -83,7 +94,7 @@ Requires macOS, Python 3.11+ and Git. Authenticated `gh` enables private project
 preservation. Optional `pdftotext`, Tesseract and `ffprobe` improve local extraction.
 
 ```sh
-git clone --branch v0.3.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
+git clone --branch v0.3.1 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
 cd mac-guardian-agent
 python3 -m unittest discover -s tests -v
 python3 scripts/install_native.py
