@@ -3,6 +3,10 @@ FROM public.ecr.aws/e1h7x4a2/plow-cloud-agents@sha256:42a6d50f15d67c620f68312d06
 ARG AGENT_ID=""
 ARG AGENT_NAME="Mac Guardian"
 ARG AGENT_BLURB="Cuida da saúde do Mac com manutenção, wiki e backups privados verificáveis."
+LABEL org.opencontainers.image.title="Mac Guardian" \
+    org.opencontainers.image.source="https://github.com/EnzoTironi/mac-guardian-agent" \
+    org.opencontainers.image.licenses="MIT" \
+    org.opencontainers.image.version="0.1.0"
 ENV AGENT_ID=${AGENT_ID} \
     AGENT_NAME=${AGENT_NAME} \
     AGENT_BLURB=${AGENT_BLURB} \

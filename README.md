@@ -4,7 +4,7 @@ Agente de manutenção de macOS baseado em OpenClaw e Plow. O OpenClaw conversa
 com o proprietário; Latch executa as operações no Mac; um coletor local mantém
 os relatórios mesmo quando o contêiner está parado.
 
-O nome e o slug de publicação ainda precisam ser definidos pelo proprietário.
+O nome público é **Mac Guardian**, com slug `mac-guardian` no Agent Index.
 O código deste projeto é MIT. OpenClaw, Plow, Caddy, Mole e Vorssaint mantêm
 suas próprias licenças. Mole e Vorssaint não são copiados nem distribuídos aqui.
 
@@ -36,7 +36,7 @@ Para o agente conversar e executar ações, é preciso Docker, Plow e Latch cone
 ao Mac real. Uma instalação fixture do Latch não tem acesso operacional ao Mac.
 
 ```sh
-git clone https://github.com/EnzoTironi/mac-guardian-agent.git
+git clone --branch v0.1.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
 cd mac-guardian-agent
 python3 -m unittest discover -s tests -v
 python3 scripts/install_native.py
@@ -130,8 +130,9 @@ GitHub privado não substitui um backup completo nem criptografia de dados pesso
 
 ## Publicar no Agent Index
 
-O proprietário fornece slug, nome e descrição. Depois do teste de resposta e da
-conexão real do Latch, compile uma imagem que contenha essa identidade:
+A identidade desta publicação é Mac Guardian (`mac-guardian`). Outros criadores
+que publicarem uma variante escolhem seu próprio slug. Depois do teste de resposta
+e da conexão real do Latch, compile uma imagem que contenha essa identidade:
 
 ```sh
 python3 scripts/build_publish.py ghcr.io/SEU_USUARIO/seu-agente:v1

@@ -29,9 +29,11 @@ uma limpeza limitada a cache antigo, organizada uma seleção de arquivos antigo
 e validado um backup privado da wiki por clone independente.
 Os detalhes e caminhos pessoais ficam somente nos relatórios privados.
 
-O Agent Index ainda depende da identidade fornecida pelo proprietário. AGENT_ID
-vazio desativa o reporter oficial, conforme contrato da base. Build e teste local
-não certificam cadastro, telemetria publicada, deploy de um clique ou saída de WIP.
+O proprietário autorizou o nome Mac Guardian. O slug de publicação é
+mac-guardian e a descrição resume as funções solicitadas. A configuração da
+publicação fica fora do Git. O reporter oficial é habilitado quando AGENT_ID
+está definido. Cadastro, telemetria, imagem pública, deploy de um clique e
+saída de WIP exigem confirmações independentes; consulte o registro da publicação.
 O GitHub Actions não iniciou o runner. A anotação do GitHub informa pagamentos
 recentes falhos ou limite de gastos. Os testes locais permanecem a evidência
 executada; não há confirmação de CI verde.
