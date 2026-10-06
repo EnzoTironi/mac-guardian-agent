@@ -1,5 +1,9 @@
 # Mac Guardian
 
+![Your Mac has a doctor now](media/campaign-v1/images/01-your-mac-has-a-doctor.png)
+
+[English campaign and 40-second HyperFrames film](media/campaign-v1/README.md)
+
 Agente de manutenção automática de macOS baseado em OpenClaw e Plow. Ele limpa
 conteúdo recriável, atualiza apps fechados e organiza os arquivos pessoais em
 uma wiki. O proprietário conversa quando quiser; a rotina trabalha em silêncio.

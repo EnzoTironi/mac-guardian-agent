@@ -1,0 +1,56 @@
+<template>
+<div data-hf-id="hf-tefb" id="root" data-composition-id="02-doctor" data-duration="5" data-width="1920" data-height="1080" data-fps="24">
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:400;src:url("assets/fonts/BarlowCondensed-400.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:700;src:url("assets/fonts/BarlowCondensed-700.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:900;src:url("assets/fonts/BarlowCondensed-900.ttf") format("truetype");font-display:block}
+@font-face{font-family:"JetBrains Mono";font-weight:400;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2");font-display:block}
+
+*{box-sizing:border-box}
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:size;color:#F4F1E7;font-family:"Barlow Condensed",sans-serif;--ink:#07110E;--paper:#F4F1E7;--mint:#93F5CE}
+#root .clip{position:absolute;inset:0;width:100%;height:100%}
+#root .bg{background:#07110E}
+#root .stage{position:absolute;inset:0;overflow:hidden}
+#root .chrome{position:absolute;left:5cqw;top:5cqh;font-family:"JetBrains Mono",monospace;font-size:1.08cqw;letter-spacing:.12em;color:#93F5CE}
+#root .hero{position:absolute;left:5cqw;top:20cqh;width:49cqw;font-weight:900;font-size:10.6cqw;line-height:.86;letter-spacing:-.018em}
+#root .hero>span{display:block}
+#root .mint{color:#93F5CE}
+#root .support{position:absolute;left:5cqw;top:64cqh;width:45cqw;font-size:2.25cqw;font-weight:400;line-height:1.16}
+#root .caption{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;line-height:1.5;letter-spacing:.02em}
+#root .foot{position:absolute;left:5cqw;top:78cqh;max-width:88cqw;color:#F4F1E7}
+#root .doctor{position:absolute;left:54cqw;top:8cqh;width:41cqw;height:73cqh;object-fit:contain}
+#root .pulse{position:absolute;left:5cqw;top:73cqh;width:43cqw;height:5cqh;overflow:visible}
+#root .pulse path{fill:none;stroke:#93F5CE;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+#root .label{font-family:"JetBrains Mono",monospace;font-size:1.05cqw;letter-spacing:.07em}
+
+#root .hero{top:20cqh;font-size:11.4cqw}
+#root .intro-promise{position:absolute;left:5cqw;top:61cqh;font-size:3.6cqw;font-weight:700}
+#root .intro-every{position:absolute;left:5cqw;top:78cqh;width:47cqw;font-size:1.16cqw}
+#root .pulse{top:70cqh}
+</style>
+<div data-hf-id="hf-u6tr" id="mg-02-doctor-ground" class="clip bg" data-start="0" data-duration="5" data-track-index="0"></div>
+<div data-hf-id="hf-02sq" id="mg-02-doctor-visual" class="clip visual" data-start="0" data-duration="5" data-track-index="1"><div data-hf-id="hf-tan6" class="stage"><div data-hf-id="hf-5imo" class="chrome">MEET YOUR MAC'S DOCTOR</div>
+<div data-hf-id="hf-hie8" class="hero"><span data-hf-id="hf-xass" data-layout-allow-overlap="" class="brand-first">MAC</span><span data-hf-id="hf-wihq" data-layout-allow-overlap="" class="brand-second mint">GUARDIAN.</span></div>
+<img data-hf-id="hf-kr4n" class="doctor" src="assets/doctor.png" alt="Mac Guardian doctor holding a laptop">
+<div data-hf-id="hf-irck" class="intro-promise">AUTOMATIC CARE.</div>
+<div data-hf-id="hf-etdy" class="intro-every caption">Every 15 minutes. Quietly, on your Mac.</div><svg data-hf-id="hf-itj4" class="pulse" viewBox="0 0 900 100" data-layout-ignore=""><path data-hf-id="hf-m2ir" d="M0 60 L260 60 L284 52 L300 60 L325 60 L350 15 L372 92 L395 44 L418 60 L900 60" /></svg></div></div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('root');
+const q=s=>root.querySelector(s), qa=s=>Array.from(root.querySelectorAll(s));
+const tl=gsap.timeline({paused:true});
+
+tl.fromTo(q('.doctor'),{x:120,scale:.84,opacity:0,rotation:5},{x:0,scale:1,opacity:1,rotation:0,duration:.75,ease:'power3.out'},0);
+tl.fromTo(q('.brand-first'),{y:100,opacity:0},{y:0,opacity:1,duration:.5,ease:'power4.out'},.08);
+tl.fromTo(q('.brand-second'),{y:110,opacity:0},{y:0,opacity:1,duration:.55,ease:'power4.out'},.3);
+tl.fromTo(q('.intro-promise'),{x:-60,opacity:0},{x:0,opacity:1,duration:.5,ease:'power3.out'},1.25);
+const p=q('.pulse path'),L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
+tl.to(p,{strokeDashoffset:0,duration:1.25,ease:'power2.inOut'},2.08);
+tl.fromTo(q('.intro-every'),{y:18,opacity:0},{y:0,opacity:1,duration:.5,ease:'power2.out'},3.33);
+
+window.__timelines["02-doctor"]=tl;
+})();
+</script>
+</div>
+</template>

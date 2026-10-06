@@ -1,0 +1,11 @@
+{
+  "bgm": {
+    "path": "assets/original-score.wav",
+    "duration_s": 40,
+    "volume": 0.9,
+    "source": "original-local-composition"
+  },
+  "voices": [],
+  "sfx": [],
+  "total_duration_s": 40
+}

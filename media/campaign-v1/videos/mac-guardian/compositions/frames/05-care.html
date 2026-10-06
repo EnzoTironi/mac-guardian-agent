@@ -1,0 +1,60 @@
+<template>
+<div data-hf-id="hf-wxnm" id="root" data-composition-id="05-care" data-duration="5" data-width="1920" data-height="1080" data-fps="24">
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:400;src:url("assets/fonts/BarlowCondensed-400.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:700;src:url("assets/fonts/BarlowCondensed-700.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:900;src:url("assets/fonts/BarlowCondensed-900.ttf") format("truetype");font-display:block}
+@font-face{font-family:"JetBrains Mono";font-weight:400;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2");font-display:block}
+
+*{box-sizing:border-box}
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:size;color:#F4F1E7;font-family:"Barlow Condensed",sans-serif;--ink:#07110E;--paper:#F4F1E7;--mint:#93F5CE}
+#root .clip{position:absolute;inset:0;width:100%;height:100%}
+#root .bg{background:#07110E}
+#root .stage{position:absolute;inset:0;overflow:hidden}
+#root .chrome{position:absolute;left:5cqw;top:5cqh;font-family:"JetBrains Mono",monospace;font-size:1.08cqw;letter-spacing:.12em;color:#93F5CE}
+#root .hero{position:absolute;left:5cqw;top:20cqh;width:49cqw;font-weight:900;font-size:10.6cqw;line-height:.86;letter-spacing:-.018em}
+#root .hero>span{display:block}
+#root .mint{color:#93F5CE}
+#root .support{position:absolute;left:5cqw;top:64cqh;width:45cqw;font-size:2.25cqw;font-weight:400;line-height:1.16}
+#root .caption{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;line-height:1.5;letter-spacing:.02em}
+#root .foot{position:absolute;left:5cqw;top:78cqh;max-width:88cqw;color:#F4F1E7}
+#root .doctor{position:absolute;left:54cqw;top:8cqh;width:41cqw;height:73cqh;object-fit:contain}
+#root .pulse{position:absolute;left:5cqw;top:73cqh;width:43cqw;height:5cqh;overflow:visible}
+#root .pulse path{fill:none;stroke:#93F5CE;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+#root .label{font-family:"JetBrains Mono",monospace;font-size:1.05cqw;letter-spacing:.07em}
+
+#root .care-pass{position:absolute;inset:0;opacity:0}
+#root .care-head{position:absolute;left:5cqw;top:25cqh;width:53cqw;font-weight:900;font-size:9.2cqw;line-height:.91;color:#93F5CE;letter-spacing:-.015em}
+#root .care-c .care-head{font-size:7.7cqw;width:53cqw}
+#root .care-detail{position:absolute;left:5cqw;top:67cqh;width:53cqw;font-size:2.2cqw;color:#F4F1E7}
+#root .care-art{position:absolute;left:64cqw;top:20cqh;width:26cqw;height:48cqh}
+#root .care-art svg{width:100%;height:100%;fill:none;stroke:#93F5CE;stroke-width:12;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<div data-hf-id="hf-duwu" id="mg-05-care-ground" class="clip bg" data-start="0" data-duration="5" data-track-index="0"></div>
+<div data-hf-id="hf-s18v" id="mg-05-care-visual" class="clip visual" data-start="0" data-duration="5" data-track-index="1"><div data-hf-id="hf-tan6" class="stage"><div data-hf-id="hf-sa1u" class="chrome">03 / CONTINUOUS CARE</div>
+<div data-hf-id="hf-fso8" class="care-pass care-a"><div data-hf-id="hf-dc5v" class="care-head">UPDATE<br data-hf-id="hf-x5px">IDLE APPS.</div><div data-hf-id="hf-1qcj" class="care-detail">Verify supported official updates.</div><div data-hf-id="hf-l2a2" class="care-art update-symbol" data-layout-ignore=""><svg data-hf-id="hf-39h5" viewBox="0 0 300 300"><path data-hf-id="hf-zkvo" d="M235 85 A105 105 0 1 0 245 203" /><path data-hf-id="hf-owm0" d="M190 82 L245 82 L245 27" /></svg></div></div>
+<div data-hf-id="hf-ogk3" class="care-pass care-b"><div data-hf-id="hf-a1fx" class="care-head">REVIEW<br data-hf-id="hf-rsrt">MAC HEALTH.</div><div data-hf-id="hf-uf1a" class="care-detail">Memory, apps and startup items.</div><div data-hf-id="hf-ayxx" class="care-art health-symbol" data-layout-ignore=""><svg data-hf-id="hf-8xot" viewBox="0 0 300 300"><circle data-hf-id="hf-1tgn" cx="130" cy="130" r="90" /><path data-hf-id="hf-nyf9" d="M190 190 L270 270 M57 130 L94 130 L113 83 L133 177 L154 115 L169 130 L205 130" /></svg></div></div>
+<div data-hf-id="hf-kig2" class="care-pass care-c"><div data-hf-id="hf-yz0c" class="care-head">BACK UP<br data-hf-id="hf-szow">APPROVED FILES.</div><div data-hf-id="hf-m9rq" class="care-detail">Verified private GitHub backups.</div><div data-hf-id="hf-5ijd" class="care-art backup-symbol" data-layout-ignore=""><svg data-hf-id="hf-a4lw" viewBox="0 0 300 300"><path data-hf-id="hf-qtur" d="M25 92 L25 245 L275 245 L275 75 L140 75 L115 45 L25 45 Z" /><path data-hf-id="hf-0f07" d="M105 174 L138 205 L205 130" /></svg></div></div>
+<div data-hf-id="hf-mt80" class="foot caption">Local maintenance. Reversible file changes.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('root');
+const q=s=>root.querySelector(s), qa=s=>Array.from(root.querySelectorAll(s));
+const tl=gsap.timeline({paused:true});
+
+qa('.care-pass').forEach((el,i)=>{
+ let t=i*1.667;
+ tl.fromTo(el,{opacity:0},{opacity:1,duration:.08},t);
+ tl.fromTo(el.querySelector('.care-head'),{y:55,scale:.96},{y:0,scale:1,duration:.45,ease:'power4.out'},t);
+ tl.fromTo(el.querySelector('.care-detail'),{y:20,opacity:0},{y:0,opacity:1,duration:.35},t+.6);
+ tl.fromTo(el.querySelector('.care-art'),{scale:.7,rotation:-30,opacity:0},{scale:1,rotation:0,opacity:1,duration:.6,ease:'back.out(1.2)'},t+.1);
+ if(i<2)tl.to(el,{opacity:0,duration:.08},t+1.58);
+});
+tl.fromTo(q('.foot'),{opacity:0},{opacity:1,duration:.35},3.9);
+
+window.__timelines["05-care"]=tl;
+})();
+</script>
+</div>
+</template>

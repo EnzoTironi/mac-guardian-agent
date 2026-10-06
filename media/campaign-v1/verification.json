@@ -1,0 +1,57 @@
+{
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0
+  },
+  "ok": true,
+  "browserSkipped": false,
+  "film": {
+    "duration_seconds": 40,
+    "width": 1920,
+    "height": 1080,
+    "fps": 24,
+    "video_codec": "H.264",
+    "audio_codec": "AAC",
+    "audio_rate_hz": 48000,
+    "audio_channels": 2,
+    "score_bpm": 144
+  },
+  "images": {
+    "campaign_count": 4,
+    "campaign_dimensions": [
+      1672,
+      941
+    ],
+    "logo_dimensions": [
+      1254,
+      1254
+    ],
+    "logo_transparent_alpha": true
+  }
+}
