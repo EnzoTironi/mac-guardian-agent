@@ -1,0 +1,33 @@
+name: mac-guardian
+services:
+  agent:
+    build:
+      context: .
+      args:
+        AGENT_ID: ${AGENT_ID:-}
+        AGENT_NAME: ${AGENT_NAME:-Mac Guardian}
+        AGENT_BLURB: ${AGENT_BLURB:-Manutenção do Mac com wiki e backups verificáveis.}
+    env_file:
+      - path: ./plow-credentials
+        required: true
+    environment:
+      AGENT_ID: ${AGENT_ID:-}
+      AGENT_NAME: ${AGENT_NAME:-Mac Guardian}
+      AGENT_BLURB: ${AGENT_BLURB:-Manutenção do Mac com wiki e backups verificáveis.}
+    ports:
+      - "127.0.0.1:3012:3001"
+    volumes:
+      - state:/var/lib/plow
+    restart: unless-stopped
+    stop_grace_period: 35s
+    mem_limit: 4g
+    cpus: 2
+  dev-dashboard:
+    image: caddy:2@sha256:14a9c00d4e833ebc2b65d36515b37bde3b73f0b323a2663aaafc88953d8c4e3f
+    network_mode: service:agent
+    depends_on: [agent]
+    volumes:
+      - ./dev/Caddyfile:/etc/caddy/Caddyfile:ro
+    restart: unless-stopped
+volumes:
+  state:

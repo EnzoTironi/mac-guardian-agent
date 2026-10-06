@@ -1,0 +1,79 @@
+<template>
+<div data-hf-id="hf-smex" id="root" data-composition-id="04-wiki" data-duration="6.666666" data-width="1920" data-height="1080" data-fps="24">
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:400;src:url("assets/fonts/BarlowCondensed-400.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:700;src:url("assets/fonts/BarlowCondensed-700.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:900;src:url("assets/fonts/BarlowCondensed-900.ttf") format("truetype");font-display:block}
+@font-face{font-family:"JetBrains Mono";font-weight:400;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2");font-display:block}
+
+*{box-sizing:border-box}
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:size;color:#F4F1E7;font-family:"Barlow Condensed",sans-serif;--ink:#07110E;--paper:#F4F1E7;--mint:#93F5CE}
+#root .clip{position:absolute;inset:0;width:100%;height:100%}
+#root .bg{background:#07110E}
+#root .stage{position:absolute;inset:0;overflow:hidden}
+#root .chrome{position:absolute;left:5cqw;top:5cqh;font-family:"JetBrains Mono",monospace;font-size:1.08cqw;letter-spacing:.12em;color:#93F5CE}
+#root .hero{position:absolute;left:5cqw;top:20cqh;width:49cqw;font-weight:900;font-size:10.6cqw;line-height:.86;letter-spacing:-.018em}
+#root .hero>span{display:block}
+#root .mint{color:#93F5CE}
+#root .support{position:absolute;left:5cqw;top:64cqh;width:45cqw;font-size:2.25cqw;font-weight:400;line-height:1.16}
+#root .caption{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;line-height:1.5;letter-spacing:.02em}
+#root .foot{position:absolute;left:5cqw;top:78cqh;max-width:88cqw;color:#F4F1E7}
+#root .doctor{position:absolute;left:54cqw;top:8cqh;width:41cqw;height:73cqh;object-fit:contain}
+#root .pulse{position:absolute;left:5cqw;top:73cqh;width:43cqw;height:5cqh;overflow:visible}
+#root .pulse path{fill:none;stroke:#93F5CE;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+#root .label{font-family:"JetBrains Mono",monospace;font-size:1.05cqw;letter-spacing:.07em}
+
+#root .hero{top:22cqh;font-size:9.2cqw;width:47cqw}
+#root .support{top:59cqh;font-size:2.3cqw}
+#root .wiki-support>span{display:block;line-height:1.3}
+#root .wiki-scene{position:absolute;left:55cqw;top:15cqh;width:40cqw;height:62cqh}
+#root .note-card{position:absolute;left:6cqw;top:1cqh;width:27cqw;height:35cqh;background:#F4F1E7;color:#07110E;padding:2cqw;border:4px solid #07110E;z-index:4}
+#root .note-eyebrow{font-size:.95cqw}
+#root .note-heading{font-size:3.1cqw;font-weight:700;margin-top:3cqh}
+#root .note-lines{margin-top:2cqh}
+#root .note-lines i{display:block;width:19cqw;height:3px;background:#07110E;opacity:.3;margin:1.5cqh 0}
+#root .note-old,#root .note-new{position:absolute;left:2cqw;bottom:3cqh;font-size:1.1cqw;white-space:nowrap}
+#root .note-new{color:#07110E;background:#93F5CE;padding:.5cqw;left:1.5cqw;bottom:2cqh;opacity:0}
+#root .wiki-root{position:absolute;left:4cqw;top:6cqh;width:30cqw;font-size:2.5cqw;text-align:center;color:#93F5CE;opacity:0}
+#root .folders{position:absolute;left:0;top:24cqh;display:flex;gap:1.5cqw}
+#root .wiki-folder{position:relative;width:11cqw;height:17cqh;background:#93F5CE;border:4px solid #07110E;padding:1.2cqw;opacity:0}
+#root .wiki-folder i{display:block;width:4cqw;height:2cqh;background:#93F5CE;position:absolute;top:-2cqh;left:-4px;border:4px solid #07110E;border-bottom:0}
+#root .wiki-folder b{position:absolute;left:1cqw;right:1cqw;bottom:2.5cqh;color:#07110E;font-family:"JetBrains Mono",monospace;font-size:.85cqw;text-align:center}
+#root .wiki-index{position:absolute;left:12cqw;top:49cqh;width:12cqw;text-align:center;border-bottom:2px solid #93F5CE;font-size:1.25cqw;padding:1cqw 0;opacity:0}
+#root .wiki-connector{position:absolute;left:5.5cqw;top:39cqh;width:25cqw;height:13cqh;border:2px solid #93F5CE;border-top:0;opacity:0}
+</style>
+<div data-hf-id="hf-1c17" id="mg-04-wiki-ground" class="clip bg" data-start="0" data-duration="6.666666" data-track-index="0"></div>
+<div data-hf-id="hf-20xo" id="mg-04-wiki-visual" class="clip visual" data-start="0" data-duration="6.666666" data-track-index="1"><div data-hf-id="hf-tan6" class="stage"><div data-hf-id="hf-iug2" class="chrome">02 / YOUR PERSONAL FILE WIKI</div>
+<div data-hf-id="hf-hie8" class="hero"><span data-hf-id="hf-sndn" data-layout-allow-overlap="">FILES WITH</span><span data-hf-id="hf-oc33" data-layout-allow-overlap="" class="mint">A HOME.</span></div>
+<div data-hf-id="hf-0vo0" class="support wiki-support">Clear names.<span data-hf-id="hf-ppxr" data-layout-allow-overlap="">Linked indexes.</span><span data-hf-id="hf-mksb" data-layout-allow-overlap="">Reversible moves.</span></div>
+<div data-hf-id="hf-bgzv" class="wiki-scene">
+ <div data-hf-id="hf-iqpb" class="note-card"><div data-hf-id="hf-9vjv" class="note-eyebrow label">MARKDOWN NOTE</div><div data-hf-id="hf-yugi" class="note-heading">Italy trip plan</div><div data-hf-id="hf-d8kv" class="note-lines" data-layout-ignore=""><i data-hf-id="hf-wt6k"></i><i data-hf-id="hf-zeb8"></i><i data-hf-id="hf-y7e5"></i></div><div data-hf-id="hf-0t8i" class="note-old label">untitled-3.md</div><div data-hf-id="hf-ac1d" class="note-new label">italy-trip-plan.md</div></div>
+ <div data-hf-id="hf-w1uw" class="wiki-root label">~/Wiki</div>
+ <div data-hf-id="hf-gt9z" class="folders"><div data-hf-id="hf-m5kd" class="wiki-folder"><i data-hf-id="hf-ylp6"></i><b data-hf-id="hf-bhwl">DOCUMENTS</b></div><div data-hf-id="hf-feqp" class="wiki-folder"><i data-hf-id="hf-0l8b"></i><b data-hf-id="hf-otvv">IMAGES</b></div><div data-hf-id="hf-glns" class="wiki-folder"><i data-hf-id="hf-0zjc"></i><b data-hf-id="hf-8f3h">VIDEOS</b></div></div>
+ <div data-hf-id="hf-5ik5" class="wiki-index label">Home.md</div><div data-hf-id="hf-99xb" class="wiki-connector" data-layout-ignore=""></div>
+</div><div data-hf-id="hf-uzp1" class="foot caption">Illustrative workflow. Files organized locally.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('root');
+const q=s=>root.querySelector(s), qa=s=>Array.from(root.querySelectorAll(s));
+const tl=gsap.timeline({paused:true});
+
+tl.fromTo(q('.hero'),{y:60,opacity:0},{y:0,opacity:1,duration:.6,ease:'power4.out'},0);
+tl.fromTo(q('.note-card'),{rotation:9,scale:.86,y:50,opacity:0},{rotation:0,scale:1,y:0,opacity:1,duration:.7,ease:'power3.out'},.1);
+tl.fromTo(q('.note-heading'),{y:12,opacity:0},{y:0,opacity:1,duration:.4},1.667);
+tl.to(q('.note-old'),{opacity:0,duration:.15},2.4);
+tl.fromTo(q('.note-new'),{x:-20,opacity:0},{x:0,opacity:1,duration:.38,ease:'power3.out'},2.5);
+tl.fromTo(q('.wiki-root'),{y:20,opacity:0},{y:0,opacity:1,duration:.4},4.6);
+qa('.wiki-folder').forEach((el,i)=>tl.fromTo(el,{y:65,scale:.8,opacity:0},{y:0,scale:1,opacity:1,duration:.55,ease:'back.out(1.3)'},3.5+i*.17));
+tl.to(q('.note-card'),{scale:.23,x:-260,y:180,opacity:0,duration:.8,ease:'power3.inOut'},3.85);
+tl.fromTo(q('.wiki-connector'),{scaleY:0,opacity:0,transformOrigin:'50% 0%'},{scaleY:1,opacity:1,duration:.5,ease:'power2.out'},4.667);
+tl.fromTo(q('.wiki-index'),{y:20,opacity:0},{y:0,opacity:1,duration:.45},5);
+qa('.wiki-support,.wiki-support>span').forEach((el,i)=>tl.fromTo(el,{x:-20,opacity:0},{x:0,opacity:1,duration:.35},1+i*1.75));
+tl.fromTo(q('.foot'),{opacity:0},{opacity:1,duration:.4},5.333);
+
+window.__timelines["04-wiki"]=tl;
+})();
+</script>
+</div>
+</template>

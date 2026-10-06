@@ -1,0 +1,15 @@
+*
+!Dockerfile
+!prompt/
+!prompt/AGENTS.md
+!skills/
+!skills/mac-health/
+!skills/mac-health/SKILL.md
+!native/
+!native/mac_guardian.py
+!native/workspace_care.py
+plow-credentials
+private
+.env
+listing.json
+agent.env

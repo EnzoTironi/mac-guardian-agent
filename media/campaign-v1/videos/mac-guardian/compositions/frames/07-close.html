@@ -1,0 +1,61 @@
+<template>
+<div data-hf-id="hf-uext" id="root" data-composition-id="07-close" data-duration="6.666667" data-width="1920" data-height="1080" data-fps="24">
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:400;src:url("assets/fonts/BarlowCondensed-400.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:700;src:url("assets/fonts/BarlowCondensed-700.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:900;src:url("assets/fonts/BarlowCondensed-900.ttf") format("truetype");font-display:block}
+@font-face{font-family:"JetBrains Mono";font-weight:400;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2");font-display:block}
+
+*{box-sizing:border-box}
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:size;color:#F4F1E7;font-family:"Barlow Condensed",sans-serif;--ink:#07110E;--paper:#F4F1E7;--mint:#93F5CE}
+#root .clip{position:absolute;inset:0;width:100%;height:100%}
+#root .bg{background:#07110E}
+#root .stage{position:absolute;inset:0;overflow:hidden}
+#root .chrome{position:absolute;left:5cqw;top:5cqh;font-family:"JetBrains Mono",monospace;font-size:1.08cqw;letter-spacing:.12em;color:#93F5CE}
+#root .hero{position:absolute;left:5cqw;top:20cqh;width:49cqw;font-weight:900;font-size:10.6cqw;line-height:.86;letter-spacing:-.018em}
+#root .hero>span{display:block}
+#root .mint{color:#93F5CE}
+#root .support{position:absolute;left:5cqw;top:64cqh;width:45cqw;font-size:2.25cqw;font-weight:400;line-height:1.16}
+#root .caption{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;line-height:1.5;letter-spacing:.02em}
+#root .foot{position:absolute;left:5cqw;top:78cqh;max-width:88cqw;color:#F4F1E7}
+#root .doctor{position:absolute;left:54cqw;top:8cqh;width:41cqw;height:73cqh;object-fit:contain}
+#root .pulse{position:absolute;left:5cqw;top:73cqh;width:43cqw;height:5cqh;overflow:visible}
+#root .pulse path{fill:none;stroke:#93F5CE;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+#root .label{font-family:"JetBrains Mono",monospace;font-size:1.05cqw;letter-spacing:.07em}
+
+#root .hero{top:22cqh;font-size:9.75cqw;width:53cqw}
+#root .doctor{left:60cqw;width:35cqw;top:7cqh;height:72cqh}
+#root .close-tag{position:absolute;left:5cqw;top:61cqh;width:54cqw;font-size:2.2cqw}
+#root .close-url{position:absolute;left:5cqw;top:72cqh;font-size:1.25cqw;color:#93F5CE;width:57cqw}
+#root .close-credit{position:absolute;left:5cqw;top:79cqh;font-size:.95cqw}
+#root .pulse{left:62cqw;width:31cqw;top:78cqh;height:4cqh}
+</style>
+<div data-hf-id="hf-ryet" id="mg-07-close-ground" class="clip bg" data-start="0" data-duration="6.666667" data-track-index="0"></div>
+<div data-hf-id="hf-mmne" id="mg-07-close-visual" class="clip visual" data-start="0" data-duration="6.666667" data-track-index="1"><div data-hf-id="hf-tan6" class="stage"><div data-hf-id="hf-ntm0" class="chrome">MAC GUARDIAN</div>
+<div data-hf-id="hf-hie8" class="hero"><span data-hf-id="hf-biiy" data-layout-allow-overlap="" class="close-first">YOUR MAC.</span><span data-hf-id="hf-t7gs" data-layout-allow-overlap="" class="close-second mint">CARED FOR.</span></div>
+<img data-hf-id="hf-mf8z" class="doctor" src="assets/doctor.png" alt="Mac Guardian doctor with laptop">
+<div data-hf-id="hf-z48z" class="close-tag">Automatic maintenance. Through conversation.</div>
+<div data-hf-id="hf-o8u8" class="close-url label">aiworthusing.com/agent-index/mac-guardian</div>
+<div data-hf-id="hf-rbm7" class="close-credit caption">MIT / OpenClaw + Plow</div><svg data-hf-id="hf-itj4" class="pulse" viewBox="0 0 900 100" data-layout-ignore=""><path data-hf-id="hf-m2ir" d="M0 60 L260 60 L284 52 L300 60 L325 60 L350 15 L372 92 L395 44 L418 60 L900 60" /></svg></div></div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('root');
+const q=s=>root.querySelector(s), qa=s=>Array.from(root.querySelectorAll(s));
+const tl=gsap.timeline({paused:true});
+
+tl.fromTo(q('.doctor'),{y:60,scale:.9,opacity:0},{y:0,scale:1,opacity:1,duration:.8,ease:'power3.out'},0);
+tl.fromTo(q('.close-first'),{y:70,opacity:0},{y:0,opacity:1,duration:.5,ease:'power4.out'},.1);
+tl.fromTo(q('.close-second'),{y:70,opacity:0},{y:0,opacity:1,duration:.55,ease:'power4.out'},.4167);
+tl.fromTo(q('.close-tag'),{y:20,opacity:0},{y:0,opacity:1,duration:.45},1.667);
+tl.fromTo(q('.close-url'),{x:-20,opacity:0},{x:0,opacity:1,duration:.45},3.333);
+tl.fromTo(q('.close-credit'),{opacity:0},{opacity:1,duration:.4},4.167);
+const p=q('.pulse path'),L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
+tl.to(p,{strokeDashoffset:0,duration:1.5,ease:'power2.inOut'},3.5);
+tl.to(q('.stage'),{opacity:0,duration:.45,ease:'power2.inOut'},6.2);
+
+window.__timelines["07-close"]=tl;
+})();
+</script>
+</div>
+</template>

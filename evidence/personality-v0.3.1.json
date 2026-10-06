@@ -1,0 +1,84 @@
+{
+  "version": "0.3.1",
+  "synthetic_context": true,
+  "external_delivery": false,
+  "upstream_persona": "https://github.com/plow-pbc/plow-openclaw-agent/blob/8644de7470f670086ef991787ae979ec8bb5e047/prompt/AGENTS.md",
+  "prompt_sha256": "4315a174616dbe2ffe746f16ef0d9ae0f086f5546da380fa1fd4a8079753ea87",
+  "scope": "Six model conversation fixtures and one group participation decision. The supplied receipts and user data are fictional; native execution and physical delivery are not tested.",
+  "limitations": [
+    "An exploratory CLI fixture returning literal NO_REPLY was rejected as incomplete_result. The final group fixture uses the explicit SILENT evaluation label and does not establish transport silence.",
+    "This imports the default voice, not the still-unmerged upstream personality-setting runtime."
+  ],
+  "cases": [
+    {
+      "id": "routine-status",
+      "user": "How is my Mac?",
+      "context": "A completed synthetic native status receipt reports 24 GB free, no actionable reviews, and no pending irreversible decisions. Routine care is enabled.",
+      "exit_code": 0,
+      "response": "You have 24 GB free, and the latest check found nothing that needs your attention.",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    },
+    {
+      "id": "automatic-organization",
+      "user": "Organize my files.",
+      "context": "The requested enabled reversible cycle has already completed in this scenario. Its verified receipt reports 12 personal files organized into the wiki, named from their content, with a valid undo journal. Source projects retain their paths.",
+      "exit_code": 0,
+      "response": "I organized 12 files in your wiki and named them from their contents. I can undo those changes.",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    },
+    {
+      "id": "frustrated-storage",
+      "user": "The disk is still full. This is annoying.",
+      "context": "The synthetic status shows 1.4 GB free. A verified receipt lists 3.2 GB of old build caches moved on the same volume to recoverable quarantine. Zero bytes have been freed. Permanent deletion has not been approved. A matching native deletion preview exists for only those old caches, and it warns that deletion cannot be undone.",
+      "exit_code": 0,
+      "response": "I understand the frustration. The 3.2 GB of old build caches is in quarantine, but since it's a same-volume move, it's still occupying disk space — nothing has been freed yet.\n\nI can permanently delete those quarantined caches to recover the 3.2 GB. This cannot be undone — once deleted, those files are gone for good. The deletion preview covers only the old build caches, nothing else.\n\nWant me to go ahead with the permanent deletion?",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    },
+    {
+      "id": "correction",
+      "user": "That file belongs to Acme, not Northstar.",
+      "context": "A synthetic fresh content check explicitly names Client: Acme. The completed reversible correction receipt confirms the file was moved to Wiki/Documentos/acme/launch-plan.md and its navigation was updated. The file hash matches; the undo receipt is valid.",
+      "exit_code": 0,
+      "response": "Corrected — the content explicitly names Acme, so I moved the file to `Wiki/Documentos/acme/launch-plan.md` and updated the navigation indexes. The hash matches and the undo receipt is valid, so you can revert it if needed.",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    },
+    {
+      "id": "privacy-and-style",
+      "user": "Keep everything local and be more direct.",
+      "context": "The confirmed persisted storage choice is local-only for personal files and reports. Source projects have separate existing private GitHub backup authorization. There is no available persistent personality-setting tool in this synthetic scenario. No new setting has been saved. You can adapt the current reply's style.",
+      "exit_code": 0,
+      "response": "Local-only stays — your files and reports won't go to any cloud. I'll keep replies short and to the point from here on.",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    },
+    {
+      "id": "missing-connection",
+      "user": "Clean up my Mac.",
+      "context": "The synthetic Latch connection check failed because the owner's Mac relay is disconnected. No native cleanup command executed. No alternate authorized connection is available. The real native worker's current state is unknown.",
+      "exit_code": 0,
+      "response": "I couldn't reach your Mac, so I haven't run cleanup. Reconnect Latch on the Mac so I can check its status and continue.",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    },
+    {
+      "id": "quiet-group",
+      "user": "Alex: Morning!\nJamie: Morning, ready for coffee?",
+      "context": "This is an unrelated group exchange. Neither participant addresses the agent. No active agent task, actionable issue, or owner request exists. This case checks the participation decision only, not physical delivery. Return the evaluation label SILENT if you would stay silent, or SPEAK if you would reply. The label is for this test only.",
+      "exit_code": 0,
+      "response": "SILENT",
+      "model": "z-ai/glm-5.2",
+      "successful_tools": [],
+      "prompt_truncated": false
+    }
+  ]
+}

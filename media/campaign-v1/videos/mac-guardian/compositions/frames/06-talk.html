@@ -1,0 +1,59 @@
+<template>
+<div data-hf-id="hf-7vse" id="root" data-composition-id="06-talk" data-duration="5" data-width="1920" data-height="1080" data-fps="24">
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:400;src:url("assets/fonts/BarlowCondensed-400.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:700;src:url("assets/fonts/BarlowCondensed-700.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Barlow Condensed";font-weight:900;src:url("assets/fonts/BarlowCondensed-900.ttf") format("truetype");font-display:block}
+@font-face{font-family:"JetBrains Mono";font-weight:400;src:url("assets/fonts/JetBrainsMono-400.woff2") format("woff2");font-display:block}
+
+*{box-sizing:border-box}
+#root{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:size;color:#F4F1E7;font-family:"Barlow Condensed",sans-serif;--ink:#07110E;--paper:#F4F1E7;--mint:#93F5CE}
+#root .clip{position:absolute;inset:0;width:100%;height:100%}
+#root .bg{background:#07110E}
+#root .stage{position:absolute;inset:0;overflow:hidden}
+#root .chrome{position:absolute;left:5cqw;top:5cqh;font-family:"JetBrains Mono",monospace;font-size:1.08cqw;letter-spacing:.12em;color:#93F5CE}
+#root .hero{position:absolute;left:5cqw;top:20cqh;width:49cqw;font-weight:900;font-size:10.6cqw;line-height:.86;letter-spacing:-.018em}
+#root .hero>span{display:block}
+#root .mint{color:#93F5CE}
+#root .support{position:absolute;left:5cqw;top:64cqh;width:45cqw;font-size:2.25cqw;font-weight:400;line-height:1.16}
+#root .caption{font-family:"JetBrains Mono",monospace;font-size:1.1cqw;line-height:1.5;letter-spacing:.02em}
+#root .foot{position:absolute;left:5cqw;top:78cqh;max-width:88cqw;color:#F4F1E7}
+#root .doctor{position:absolute;left:54cqw;top:8cqh;width:41cqw;height:73cqh;object-fit:contain}
+#root .pulse{position:absolute;left:5cqw;top:73cqh;width:43cqw;height:5cqh;overflow:visible}
+#root .pulse path{fill:none;stroke:#93F5CE;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+#root .label{font-family:"JetBrains Mono",monospace;font-size:1.05cqw;letter-spacing:.07em}
+
+#root .hero{top:25cqh;font-size:13cqw;width:38cqw}
+#root .support{top:68cqh;width:42cqw;font-size:2.5cqw}
+#root .conversation{position:absolute;left:50cqw;top:15cqh;width:44cqw;height:60cqh}
+#root .conversation-name{color:#93F5CE;font-size:1.1cqw;margin-bottom:4cqh}
+#root .bubble{position:absolute;padding:1.4cqw 1.7cqw;font-size:2.15cqw;font-weight:700;line-height:1.1;border-radius:1.2cqw;opacity:0}
+#root .sent{right:0;top:8cqh;background:#93F5CE;color:#07110E;max-width:36cqw;transform-origin:100% 100%}
+#root .received{left:0;top:22cqh;background:#F4F1E7;color:#07110E;width:39cqw;transform-origin:0% 100%}
+#root .undo{top:40cqh;font-size:1.8cqw;max-width:40cqw}
+#root .chat-proof{position:absolute;top:55cqh;left:0;width:44cqw;line-height:1.4;font-size:.97cqw;color:#F4F1E7;opacity:0}
+</style>
+<div data-hf-id="hf-tjqi" id="mg-06-talk-ground" class="clip bg" data-start="0" data-duration="5" data-track-index="0"></div>
+<div data-hf-id="hf-g3or" id="mg-06-talk-visual" class="clip visual" data-start="0" data-duration="5" data-track-index="1"><div data-hf-id="hf-tan6" class="stage"><div data-hf-id="hf-hbfc" class="chrome">04 / CONVERSATION IS THE CONTROL</div>
+<div data-hf-id="hf-hie8" class="hero"><span data-hf-id="hf-iklg" data-layout-allow-overlap="">JUST</span><span data-hf-id="hf-6zlo" data-layout-allow-overlap="" class="mint">ASK.</span></div>
+<div data-hf-id="hf-u9hs" class="support">Then get on with your day.</div>
+<div data-hf-id="hf-j01h" class="conversation"><div data-hf-id="hf-usdf" class="conversation-name label">MAC GUARDIAN</div><div data-hf-id="hf-4xxm" class="bubble sent">How's my Mac?</div><div data-hf-id="hf-lgoc" class="bubble received">I'll check storage, memory and updates.</div><div data-hf-id="hf-anc2" class="bubble sent undo">Undo the last organization.</div><div data-hf-id="hf-a9zs" class="chat-proof label">Undo is available from recorded file moves.</div></div>
+<div data-hf-id="hf-dryv" class="foot caption">Illustrative conversation.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('root');
+const q=s=>root.querySelector(s), qa=s=>Array.from(root.querySelectorAll(s));
+const tl=gsap.timeline({paused:true});
+
+tl.fromTo(q('.hero'),{x:-70,opacity:0},{x:0,opacity:1,duration:.55,ease:'power4.out'},0);
+tl.fromTo(q('.support'),{y:20,opacity:0},{y:0,opacity:1,duration:.4},1.1);
+qa('.bubble').forEach((el,i)=>tl.fromTo(el,{scale:.75,y:25,opacity:0},{scale:1,y:0,opacity:1,duration:.3,ease:'back.out(1.3)'},.5+i*1.3));
+tl.fromTo(q('.chat-proof'),{y:14,opacity:0},{y:0,opacity:1,duration:.35},4);
+tl.fromTo(q('.foot'),{opacity:0},{opacity:1,duration:.4},3.6);
+
+window.__timelines["06-talk"]=tl;
+})();
+</script>
+</div>
+</template>
