@@ -487,6 +487,17 @@ class Guardian:
             "ok": False, "stderr": "mas não instalado; cobertura da App Store desconhecida", "stdout": ""}
         return results
 
+    def xprotect(self):
+        packages = command(["pkgutil", "--pkgs"])
+        if not packages["ok"]:
+            return {"status": "unknown", "error": packages["stderr"]}
+        ids = [p for p in packages["stdout"].splitlines()
+               if re.fullmatch(r"com\.apple\.pkg\.(XProtectPayloads|XProtectPlistConfigData|MRTConfigData)[A-Za-z0-9_.-]*", p)]
+        return {"status": "installed" if ids else "unknown",
+                "receipts": [{"id": p, **command(["pkgutil", "--pkg-info", p])} for p in ids],
+                "definition_freshness": "unknown",
+                "limitation": "Recibos de instalação não comprovam definição mais recente nem ausência de malware."}
+
     def check(self, full=False):
         disk = shutil.disk_usage(self.home)
         total = command(["sysctl", "-n", "hw.memsize"])["stdout"].strip()
@@ -546,7 +557,7 @@ class Guardian:
                 "sip": command(["csrutil", "status"]),
                 "gatekeeper": command(["spctl", "--status"]),
                 "filevault": command(["fdesetup", "status"]),
-                "xprotect_receipt": command(["pkgutil", "--pkg-info", "com.apple.pkg.XProtectPayloads"]),
+                "xprotect": self.xprotect(),
                 "listeners": command(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN"], 20),
                 "limitation": "Assinatura, Gatekeeper e inventário não comprovam ausência de malware."}
             report["full_checked_at"] = now()

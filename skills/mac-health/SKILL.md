@@ -9,6 +9,10 @@ Use this skill for the Mac belonging to the current Plow owner. Discover its
 published Latch skills first and follow the applicable local recipe.
 Run native commands with the exposed plow_run_command tool or its prefixed name,
 declaring the exact read/write paths and network access.
+Tools and published skills can remain discoverable while the command relay is
+unavailable. Verify a harmless native diagnostic before claiming the Mac is
+reachable. A failed MCP discovery or HTTP relay is an integration failure,
+not evidence that the owner declined an action.
 
 The native helper is installed at
 ~/Library/Application Support/MacGuardian/mac_guardian.py.
@@ -47,6 +51,17 @@ The wiki is at ~/Documents/MacWiki/Home.md.
 Open state/dashboard.html to inspect the report.
 Read only the fields needed for the owner's question. Reports include private
 paths and app names; do not embed them in a public image or listing.
+If the Mac publishes plow-wiki, read it before integrating pages into the existing
+vault. Follow its writer roots, schema, reserved generated indexes and validation
+commands. The standalone Documents/MacWiki report does not modify that vault.
+
+For check, declare both the state directory and ~/Documents/MacWiki in
+write_paths: the command regenerates reports, Markdown and indexes. Use the
+resolved absolute paths. The basic check needs no network. The full check
+refreshes Homebrew metadata, so first resolve brew --repository and brew --cache
+and declare its specific metadata/cache write paths and network access.
+For a pending handle, use plow_get_result; do not launch a duplicate full check
+while the earlier command is still running.
 
 ## Decisions that need evidence
 
