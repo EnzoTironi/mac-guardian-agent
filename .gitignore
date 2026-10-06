@@ -1,0 +1,9 @@
+/private/
+/work/
+/plow-credentials
+/.env
+/listing.json
+/agent.env
+__pycache__/
+*.pyc
+.DS_Store
