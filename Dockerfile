@@ -6,7 +6,7 @@ ARG AGENT_BLURB="Cuida da saúde do Mac com manutenção, wiki e backups privado
 LABEL org.opencontainers.image.title="Mac Guardian" \
     org.opencontainers.image.source="https://github.com/EnzoTironi/mac-guardian-agent" \
     org.opencontainers.image.licenses="MIT" \
-    org.opencontainers.image.version="0.2.0"
+    org.opencontainers.image.version="0.3.0"
 ENV AGENT_ID=${AGENT_ID} \
     AGENT_NAME=${AGENT_NAME} \
     AGENT_BLURB=${AGENT_BLURB} \
@@ -15,5 +15,5 @@ ENV AGENT_ID=${AGENT_ID} \
 COPY prompt/AGENTS.md /opt/plow/prompt/AGENTS.md
 COPY skills/ /opt/plow/skills/
 # Distributed for installation on the owner's Mac; do not run Mac checks on Linux.
-COPY native/mac_guardian.py /opt/mac-guardian/mac_guardian.py
+COPY native/ /opt/mac-guardian/
 # Keep the official entrypoint, state and five-minute usage reporter.

@@ -31,10 +31,16 @@ app.chmod(0o700)
 logs = app / "logs"
 logs.mkdir(exist_ok=True, mode=0o700)
 helper = app / "mac_guardian.py"
+for label in labels:
+    subprocess.run(["launchctl", "bootout", f"{domain}/{label}"], capture_output=True)
 if helper.exists():
     shutil.copy2(helper, app / "mac_guardian.previous.py")
-shutil.copy2(project / "native/mac_guardian.py", helper)
-helper.chmod(0o700)
+modules = sorted((project / "native").glob("*.py"), key=lambda module: module.name == helper.name)
+for module in modules:
+    temporary = app / (module.name + ".installing")
+    shutil.copy2(module, temporary)
+    temporary.chmod(0o700)
+    temporary.replace(app / module.name)
 agents.mkdir(parents=True, exist_ok=True)
 subprocess.run([sys.executable, str(helper), "init"], check=True)
 for label in labels:

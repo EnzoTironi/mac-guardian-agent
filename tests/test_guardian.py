@@ -1,4 +1,5 @@
 import importlib.util
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -34,7 +35,7 @@ class GuardianTests(unittest.TestCase):
         self.old(p)
         return p
 
-    def test_only_planned_old_cache_is_deleted(self):
+    def test_only_planned_old_cache_is_quarantined_and_restorable(self):
         old = self.cache()
         fresh = old.parent / "new-job"
         fresh.mkdir()
@@ -45,7 +46,12 @@ class GuardianTests(unittest.TestCase):
             result = self.g.clean(True)
         self.assertFalse(old.exists())
         self.assertTrue(fresh.exists())
-        self.assertGreater(result["deleted_bytes"], 0)
+        self.assertEqual(result["deleted_bytes"], 0)
+        self.assertEqual(result["freed_bytes"], 0)
+        self.assertGreater(result["quarantined_bytes"], 0)
+        with patch.object(m, "in_use", return_value=False):
+            self.g.restore_quarantine(result["items"][0]["receipt"])
+        self.assertEqual((old / "reinstallable.txt").read_text(), "discardable data")
 
     def test_recently_changed_file_cancels_planned_deletion(self):
         old = self.cache()
@@ -240,22 +246,37 @@ class GuardianTests(unittest.TestCase):
         self.old(path)
         return seed, path
 
+    @contextlib.contextmanager
+    def workspace_remote(self):
+        actual = self.g.git_run
+        def git(project, args, **kwargs):
+            args = [str(self.root / "remote.git") if a == "https://github.com/test/private.git" else a for a in args]
+            return actual(project, args, **kwargs)
+        def gh(argv, *args, **kwargs):
+            if argv[:3] != ["gh", "repo", "view"]:
+                raise AssertionError("Test attempted an unexpected external command")
+            return {"ok": True, "stdout": '{"isPrivate":true}', "stderr": ""}
+        with patch.object(self.g, "private_project_repo", return_value="test/private"), \
+             patch.object(self.g, "_command", side_effect=gh), patch.object(self.g, "git_run", side_effect=git):
+            yield
+
     def test_old_worktree_with_all_commits_remote_can_be_removed(self):
         seed, path = self.prepare_worktree()
-        with patch.object(m, "in_use", return_value=False):
+        with self.workspace_remote(), patch.object(m, "in_use", return_value=False):
             result = self.g.remove_worktree(path, apply=True)
         self.assertTrue(result["removed"])
         self.assertFalse(path.exists())
         self.assertTrue((seed / "README.md").exists())
 
-    def test_ignored_personal_data_blocks_worktree_removal(self):
+    def test_ignored_personal_data_is_restored_from_local_worktree_archive(self):
         seed, path = self.prepare_worktree()
         (seed / ".git/info/exclude").write_text(".env\n")
         (path / ".env").write_text("personal configuration")
         self.old(path)
-        with patch.object(m, "in_use", return_value=False):
-            with self.assertRaisesRegex(ValueError, "ignorados"):
-                self.g.remove_worktree(path, apply=True)
+        with self.workspace_remote(), patch.object(m, "in_use", return_value=False):
+            result = self.g.remove_worktree(path, apply=True)
+            self.assertFalse(path.exists())
+            self.g.restore_worktree(result["receipt"])
         self.assertTrue((path / ".env").exists())
 
     def test_unpushed_worktree_commit_is_preserved(self):
@@ -264,10 +285,11 @@ class GuardianTests(unittest.TestCase):
         self.git(["-C", str(path), "add", "."])
         self.git(["-C", str(path), "commit", "-m", "unpublished"])
         self.old(path)
-        with patch.object(m, "in_use", return_value=False):
-            with self.assertRaisesRegex(ValueError, "commits"):
-                self.g.remove_worktree(path, apply=True)
+        with self.workspace_remote(), patch.object(m, "in_use", return_value=False):
+            result = self.g.remove_worktree(path, apply=True)
+            self.g.restore_worktree(result["receipt"])
         self.assertTrue(path.exists())
+        self.assertEqual((path / "README.md").read_text(), "work not yet pushed")
 
 
 if __name__ == "__main__":

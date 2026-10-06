@@ -219,10 +219,14 @@ class AutonomyTests(unittest.TestCase):
             return {"ok": True, "code": 0, "stdout": output, "stderr": ""}
         return calls, patch.object(m, "command", command), patch.object(m.shutil, "which", side_effect=lambda n: "/brew" if n == "brew" else None), patch.object(m, "in_use", return_value=busy)
 
-    def test_automatic_upgrade_is_verified_and_rate_limited(self):
+    def test_explicitly_approved_upgrade_is_verified_and_rate_limited(self):
         calls, cmd, which, use = self.brew_setup()
         state = {}
         with cmd, which, use:
+            requested = self.g.package_updates(state)
+            self.assertEqual(requested["updated"], 0)
+            self.assertFalse(any(argv[:2] == ["brew", "upgrade"] for argv, _ in calls))
+            self.g.approve(requested["items"][0]["request_id"], "Owner: update this tool now")
             result = self.g.package_updates(state)
             self.g.package_updates(state)
         upgrades = [(argv, env) for argv, env in calls if argv[:2] == ["brew", "upgrade"]]
@@ -244,6 +248,8 @@ class AutonomyTests(unittest.TestCase):
     def test_unverified_upgrade_is_not_counted_as_success(self):
         calls, cmd, which, use = self.brew_setup(malformed_verify=True)
         with cmd, which, use:
+            requested = self.g.package_updates({})
+            self.g.approve(requested["items"][0]["request_id"], "Owner: update this tool now")
             result = self.g.package_updates({})
         self.assertEqual(result["updated"], 0)
         self.assertEqual(result["items"][0]["status"], "failed")
@@ -270,6 +276,8 @@ class AutonomyTests(unittest.TestCase):
             return {"ok": True, "code": 0, "stdout": json.dumps(data), "stderr": ""}
         with patch.object(m, "command", command), patch.object(m, "in_use", return_value=False), \
              patch.object(m.shutil, "which", side_effect=lambda n: "/brew" if n == "brew" else None):
+            requested = self.g.package_updates({})
+            self.g.approve(requested["items"][0]["request_id"], "Owner: update Sample now")
             result = self.g.package_updates({})
         self.assertEqual(result["updated"], 1)
         self.assertIn(["brew", "upgrade", "--cask", "sample"], calls)

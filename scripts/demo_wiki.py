@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory(prefix="mac-guardian-demo-") as tmp:
     home = Path(tmp) / "home"
     home.mkdir()
     g = m.Guardian(home, Path(tmp) / "state")
-    g.policy.update(auto_updates=False, backup_repo="")
+    g.policy.update(auto_updates=False, auto_projects=False, backup_repo="")
     fixtures = {"Downloads/fatura.pdf": b"Example document A", "Desktop/fatura.pdf": b"Example document B",
                 "Desktop/ideias.md": "# Planejamento da viagem - Itália".encode(), "Downloads/Viagens/Italia/roteiro.pdf": b"Example itinerary",
                 "Downloads/apresentacao.pptx": b"Example presentation", "Downloads/Projeto/README.md": b"Project paths stay stable",
@@ -54,7 +54,7 @@ for i, item in enumerate(captures):
     links = " ".join(f'<a href="step-{j+1}.html">{j+1}. {html.escape(c["title"])}</a>' for j, c in enumerate(captures))
     body = f'''<!doctype html><meta charset="utf-8"><title>Mac Guardian — teste da wiki</title>
 <style>body{{background:#101c25;color:#eef5f5;font:18px system-ui;margin:40px auto;max-width:1080px}}h1{{font-size:38px;margin-bottom:12px}}p{{color:#bed0d6}}nav{{display:flex;gap:28px;margin:28px 0}}a{{color:#8bdac8}}pre{{background:#172a36;border:1px solid #42616c;border-radius:12px;padding:22px;font:17px/1.55 monospace}}footer{{font-size:15px;color:#a6b8c3}}</style>
-<p>MAC GUARDIAN · v0.2.0 · RESULTADOS DE TESTE EXECUTADO</p><h1>{html.escape(item["title"])}</h1>
+<p>MAC GUARDIAN · v{m.VERSION} · RESULTADOS DE TESTE EXECUTADO</p><h1>{html.escape(item["title"])}</h1>
 <p>{html.escape(item["detail"])}</p><nav>{links}</nav><pre>{html.escape(chr(10).join(item["files"]))}</pre>
 <footer>Arquivos sintéticos em pasta temporária. Organização e undo executados pelo helper real.<br>Sem atualizações de apps, uploads de dados ou acesso a documentos pessoais.</footer>'''
     m.private_text(args.output / f"step-{i+1}.html", body)

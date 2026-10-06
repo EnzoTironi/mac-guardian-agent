@@ -4,227 +4,209 @@
 
 [English campaign and 40-second HyperFrames film](media/campaign-v1/README.md)
 
-Agente de manutenção automática de macOS baseado em OpenClaw e Plow. Ele limpa
-conteúdo recriável, atualiza apps fechados e organiza os arquivos pessoais em
-uma wiki. O proprietário conversa quando quiser; a rotina trabalha em silêncio.
-Latch executa ações do OpenClaw no Mac e o componente local continua a manutenção
-mesmo quando o contêiner está parado. Não é necessário acompanhar um dashboard.
+Mac Guardian maintains your Mac quietly and answers by conversation. It organizes
+personal files into a physical wiki, names them from their content, preserves
+project work on private GitHub branches and keeps secrets in a local Backup
+folder. Reversible work runs automatically. Procedures without guaranteed
+restoration require your approval.
 
-O nome público é **Mac Guardian**, com slug `mac-guardian` no Agent Index.
-O código deste projeto é MIT. OpenClaw, Plow, Caddy, Mole e Vorssaint mantêm
-suas próprias licenças. Mole e Vorssaint não são copiados nem distribuídos aqui.
+Built on the official Plow OpenClaw image. The native macOS worker continues
+while the conversation container is stopped. Public name: **Mac Guardian**;
+Agent Index slug: `mac-guardian`. This project's code is MIT. Upstream OpenClaw,
+Plow, Caddy, Mole and Vorssaint retain their own licenses.
 
-## O que funciona
+## Automatic care
 
-- Rotina automática a cada 15 minutos, com armazenamento, memória, swap,
-  processos por CPU/RAM, carga, bateria e histórico de até 30 dias.
-- Auditoria diária às 09:10 no fuso configurado no Mac.
-- Inventário de apps, assinatura, Gatekeeper, Homebrew, App Store quando mas está instalado,
-  serviços de inicialização e portas locais.
-- Organização física de arquivos estáveis de Downloads, Desktop e
-  da raiz pessoal em ~/Wiki, por categoria e assunto. Índices Markdown
-  ligam diretamente aos arquivos; assuntos existentes são preservados.
-- Renomeação por título e conteúdo de notas, PDFs, documentos Office, OCR local
-  de imagens e títulos de mídia. Casos ambíguos ficam para análise do agente.
-- Movimentos e renomeações reversíveis, recuperação após interrupção e nomes iguais preservados.
-- Atualizações automáticas verificadas de fontes Homebrew oficiais, até três
-  por ciclo, com apps e dependências em uso adiados. App Store via mas quando
-  disponível; instalações que exigem privilégio/autenticação podem depender do dono.
-- Limpeza de caches autorizados com idade mínima de 14 dias; artefatos de projetos
-  com 30 dias, lockfile, Git limpo e nenhum arquivo aberto.
-- Backup em GitHub privado, com clone independente e SHA-256 antes de offload.
-- Relatórios privados em ~/Library/Application Support/MacGuardian/reports, fila persistente para investigação
-  de serviços alterados, diagnóstico do próprio agente e pausa por conversa.
+- Every 15 minutes: disk, memory, swap, load, CPU/RAM processes and battery, with
+  up to 30 days of local history. A daily full audit runs at 09:10 local time.
+- Recursive organization of eligible personal files across the home directory,
+  including Downloads, Desktop and nested folders. Files live in
+  `~/Wiki/CATEGORY/SUBJECT`, with linked Markdown indexes at every folder level.
+- Descriptive names from local text, Office titles, PDF text, OCR and media tags.
+  Explicit client/project subjects determine the destination. The conversational
+  agent reviews ambiguous cases and applies a matching hash and recorded reason.
+- Journaled moves and names, collision preservation and recovery after interruption.
+- Private project snapshots: working changes, untracked code and unpublished
+  local branch tips, without switching the user's branch or changing their index.
+  Projects without Git can also be saved without initializing their source folder.
+- Local versioned secret backups in `~/Backup/MacGuardian/Secrets`, hash-verified,
+  deduplicated and owner-only. `.env`, `.envrc`, `.npmrc`, credentials, private keys
+  and detected secret-bearing files never enter project snapshots.
+- Old eligible caches/build artifacts move to a restorable quarantine. Ordinary
+  old worktrees are archived only after a verified private snapshot and a complete
+  local recovery copy of files, ignored data, Git history and staged changes.
+- Update-source checks, app/signature inventory, background jobs/listeners and
+  persistent investigation queues. Notifications occur only for actionable issues.
 
-Por exemplo, Downloads/Viagens/Italia/roteiro.pdf passa para
-~/Wiki/Documentos/Viagens/Italia/roteiro.pdf. Uma nota untitled-3.md cujo título
-é “Planejamento da viagem — Itália” recebe planejamento-da-viagem-italia.md.
-Uma data explicitamente escrita no documento pode compor o nome.
-Um arquivo solto entra na
-categoria e no ano correspondente. A rotina aguarda duas horas sem alterações e
-verifica arquivos abertos; mantém projetos, vaults existentes, apps, bibliotecas,
-links e segredos nos seus caminhos. Documents, Library/Mobile Documents e
-Library/CloudStorage ficam excluídos, incluindo aliases que apontem para essas
-raízes. A wiki contém os arquivos organizados, além das páginas de navegação.
+For example, `Family/Client/raw/untitled.md` containing a heading
+`# Brand launch plan` and `Client: Northstar` becomes
+`~/Wiki/Documentos/northstar/brand-launch-plan.md`. The wiki contains the actual
+file, its subject index, category navigation and `Home.md`. `Projects.md` links to
+source projects in their original locations. Health reports are separate.
 
-A CLI inventaria worktrees e remove worktrees Git secundários antigos somente
-após atualizar remotos e verificar commits, alterações locais, arquivos ignorados
-e locks. Worktrees gerenciados pelo Codex
-dependem do arquivamento nativo na conversa proprietária. A rotina não remove esses
-diretórios à força. Apps sem fonte de atualização ficam com estado unknown.
-As verificações de assinatura e Gatekeeper não comprovam ausência de malware.
+The worker waits for two hours without changes and checks open files. Source
+projects, existing vaults, configurations, system/app libraries and VM bundles
+retain their paths. `Documents`, `Library/Mobile Documents` and
+`Library/CloudStorage`, including aliases to those roots, are excluded.
+Files with insufficient context wait for further review rather than receiving
+invented names. Local secret detection is heuristic, not an exhaustive guarantee.
 
-## Instalar o componente do Mac
+## Recovery and permission
 
-Requer macOS, Python 3.11 ou mais recente e Git. Homebrew, gh e Mole são opcionais
-para diagnóstico, mas gh autenticado é necessário para backup.
-Poppler (pdftotext), Tesseract e FFmpeg (ffprobe) habilitam os extratores locais:
+Reversible operations run within the enabled policy without a fresh approval.
+Quarantine is a same-volume move: it preserves metadata and frees **zero bytes**.
+Permanent deletion, emptying Trash, deleting backups and procedures without
+complete rollback require explicit consent for the specific preview.
+Approval IDs bind to exact content/version, expire after one hour and are used once.
+
+Homebrew/App Store updates are checked automatically. This version requires
+approval before upgrades because a complete downgrade is not guaranteed. After
+approval, it verifies official sources, idle apps/dependencies and the updater
+result. Pinned packages, unknown taps, installer hooks, sudo, licenses and restarts
+are preserved or deferred. Unknown update sources stay pending; signatures and
+Gatekeeper checks do not prove malware absence.
+
+Ordinary secondary worktrees need both verified remote code and a complete local
+recovery archive: dirty/untracked/ignored files, secrets, symlinks, empty folders,
+modes, timestamps, xattrs, history/refs, Git config and the original index. Failed,
+busy, recent, locked, oversized, special-file, hardlink, submodule and split-index
+cases remain in place. **Codex worktrees use the native managed archive in their
+owning chat.** No manual forced removal can bypass preservation checks.
+
+The local Backup folder is `0700`; secret content and receipts are `0600`. Local
+recovery does not protect against loss of the device. Backups are retained until
+explicit deletion is approved. Private GitHub is not encryption.
+
+## Install on the Mac
+
+Requires macOS, Python 3.11+ and Git. Authenticated `gh` enables private project
+preservation. Optional `pdftotext`, Tesseract and `ffprobe` improve local extraction.
 
 ```sh
-brew install poppler tesseract ffmpeg
-```
-
-O helper funciona sem esses extratores; nomes que dependem deles ficam pendentes.
-O [Tesseract](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html)
-usa inglês por padrão. Outros idiomas dependem dos modelos locais instalados.
-Para o agente conversar e executar ações, é preciso Docker, Plow e Latch conectado
-ao Mac real. Uma instalação fixture do Latch não tem acesso operacional ao Mac.
-
-```sh
-git clone --branch v0.2.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
+git clone --branch v0.3.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
 cd mac-guardian-agent
 python3 -m unittest discover -s tests -v
 python3 scripts/install_native.py
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" check --full
 ```
 
-O instalador não altera a configuração do shell. Ele instala dois LaunchAgents e
-preserva a política existente em reinstalações. A desinstalação preserva relatórios,
-wiki e backups:
+The installer copies both native modules and installs two LaunchAgents. It
+preserves existing policy choices, wiki, reports and backups on reinstall.
+Configuration is in `~/Library/Application Support/MacGuardian/state/policy.json`.
+New installations cover the home tree; old custom root choices remain unchanged.
+To remove the jobs while preserving data:
 
 ```sh
 python3 scripts/install_native.py --uninstall
 ```
 
-## Configurar e executar o OpenClaw
+## Storage preference and projects
 
-Use os valores públicos fornecidos pelo proprietário. O script seguinte prepara
-o Compose e os argumentos da imagem; ele não cadastra o agente no índice.
+On first contact the agent asks once about Google Drive or iCloud for ordinary
+files. It records the answer and continues local care while awaiting it. Choosing
+local-only keeps personal files and reports local. Recording a cloud destination
+is preparation; cloud transfer is not implemented in this version. Secret backups
+are always local. GitHub project preservation follows separate owner authorization.
 
 ```sh
-python3 scripts/configure_listing.py \
-  --slug seu-slug \
-  --name 'Nome do agente' \
-  --blurb 'Descrição de uma linha'
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" configure-cloud --provider none
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" projects --dry-run
 ```
 
-Instale a CLI oficial Plow seguindo
-[plow-agents](https://github.com/plow-pbc/plow-agents).
-Quando não houver sessão válida:
+With authenticated `gh`, the enabled project routine creates or verifies the
+owner's private `OWNER/mac-guardian-project-backups` companion repository. Each
+project and local ref gets a separate `mac-guardian/...` branch. It sends allowed
+working files, preserving ongoing work without modifying the source branch/index.
+Original history is not used as a parent, so secrets in old commits are excluded.
+A fresh no-checkout remote clone verifies every allowed blob's SHA-256. Build data,
+ignored files and detected secrets stay local. Before archiving a worktree, a
+private local Git bundle also preserves unpublished history and staged blobs.
+
+Project visits and branch cursors continue across cycles (three projects and
+20 refs per cycle by default). Large or unsupported data remain local. GitHub
+failure preserves the project and still allows local secret protection.
+Personal wiki files are not uploaded as part of this routine. Optional legacy
+`backup_roots`/`backup_repo` are separate explicit report/folder selections;
+local-only preference disables automatic report uploads.
+
+## Conversation and recovery commands
+
+Ask “How is my Mac?”, “What used space today?”, “Pause for two hours”, “Resume”,
+“Undo the last organization” or “Restore that worktree.” Routine success is quiet.
+The owner is contacted for critical storage, confirmed risk or a concrete
+irreversible decision. Monitoring continues during a pause.
+
+For direct local inspection:
 
 ```sh
-plow-agents login
-plow-agents lines
-plow-agents deploy --local --line ln_p1
-docker compose logs -f agent
-```
-
-Escolha uma linha livre; ln_p1 é apenas o exemplo deste setup.
-Abra http://localhost:3012 e envie uma mensagem para o número mostrado pela CLI.
-Para investigações por modelo, o agente reutiliza automations do Plow na conversa
-do proprietário. O componente nativo não depende dessa rotina de conversa.
-
-O contêiner herda o boot e o reporter da base OpenClaw oficial, fixada por digest.
-Com AGENT_ID definido, a base registra o índice e reporta uso real a cada cinco
-minutos. Sem essa identidade, o reporter não é iniciado. Uma imagem compilada
-com identidade vazia precisa ser reconstruída antes da publicação.
-Não monte o diretório pessoal, o socket Docker ou credenciais GitHub no contêiner.
-
-## Operar o Mac
-
-```sh
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" check
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" status
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" doctor
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" maintain --dry-run
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" maintain
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" plan
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" clean --apply
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" organize
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" organize --apply
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" rename --apply
 ```
 
-O plano de limpeza expira em uma hora. Arquivos recentes, diretórios substituídos,
-arquivos em uso e checagens inconclusivas são preservados. A organização retorna
-uma transação que pode ser revertida com undo. maintain retorna file_transaction
-para desfazer organização e nomes daquele ciclo. Para vários ciclos, desfaça
-do mais recente ao mais antigo.
+`organize --apply` and `rename --apply` return a transaction; `undo TRANSACTION`
+restores unchanged files. `maintain` combines that cycle's moves/names into
+`file_transaction`; undo multiple cycles newest first. `naming-context` returns
+bounded local evidence; `classify-file` applies category/topic/name after content
+review, with a matching SHA-256 and reason.
 
-A renomeação mantém extensão e pasta, verifica conteúdo e arquivos em uso, e
-reconstrói os índices. O agente resolve pending_naming com naming-context e
-rename-file --path ARQUIVO --name NOME --sha256 HASH --evidence MOTIVO.
-Trechos são limitados, locais e privados; possíveis segredos não são retornados.
-Sem evidência de um nome melhor, o nome atual é preservado.
+Recovery uses `restore-quarantine --receipt ID`, `restore-worktree --receipt ID`
+and `restore-secret --identity ID --version SHA`. Restores never overwrite an
+existing destination. `purge-quarantine --receipt ID` prepares a deletion request.
+Only the owner's explicit consent can be recorded with `approve --id REQUEST_ID
+--evidence OWNER_WORDS`, then consumed by `purge-quarantine --receipt ID --apply
+--approval REQUEST_ID`. The conversational agent must never invent that consent.
 
-Pela conversa: “como está o Mac?”, “o que ocupou espaço hoje?”, “pause por duas
-horas”, “retome a manutenção” ou “desfaça a última organização”. O agente usa
-status/history, pause/resume e o journal. Não pede nova autorização para a rotina
-já habilitada na política. Investiga exceções e só avisa quando houver risco
-confirmado, falta crítica persistente de espaço ou uma decisão do proprietário.
+Mole's `mo clean --dry-run`, `mo purge --dry-run` and `mo optimize --dry-run` can
+supply additional previews. Broad cleanup may empty Trash; use specific approval
+before execution. Vorssaint is a native app, not an assumed maintenance CLI.
 
-O instalador habilita auto_cleanup, auto_organize, auto_name e auto_updates por padrão e
-preserva escolhas existentes. policy.json define raízes, idades, limites,
-file_wiki_root, health_wiki_root e os intervalos. Para manter um diagnóstico
-sem mutações, use pause. A meta de espaço livre prioriza limpeza; conteúdo
-recriável insuficiente exige outra estratégia, sem apagar documentos por impulso.
+## Run and publish on Plow
 
-Mole já oferece prévias oficiais:
+Docker, Plow and Latch connected to the real Mac enable conversation. A fixture
+Latch cannot operate the owner's device. Configure an owner-chosen listing:
 
 ```sh
-mo clean --dry-run
-mo purge --dry-run
-mo optimize --dry-run
+python3 scripts/configure_listing.py --slug YOUR_SLUG --name 'Your Agent' --blurb 'Your description'
+plow-agents login
+plow-agents lines
+plow-agents deploy --local --line ln_p1
+docker compose up -d
 ```
 
-mo clean pode esvaziar a Lixeira e alcançar categorias além da política deste
-agente. Use a prévia para decidir sobre uma operação ampla. Vorssaint é tratado
-como app nativo; esta versão não presume uma CLI de manutenção dele.
-
-## Backup e offload
-
-Edite backup_roots na política para selecionar a pasta que será enviada.
-Crie um repositório privado inicializado. O relatório de saúde já é uma origem autorizada:
+Use an available line, then text the number shown by Plow. The official base
+entrypoint and genuine five-minute usage reporter remain inherited. `AGENT_ID`
+is required for registration/reporting; persistent Plow state is kept on restart.
+Do not mount the home directory, Docker socket or GitHub credentials in the agent.
 
 ```sh
-gh repo create SEU_USUARIO/mac-backups --private --add-readme
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" \
-  backup --source "$HOME/Library/Application Support/MacGuardian/reports" --repo SEU_USUARIO/mac-backups
-```
-
-Use --offload somente para uma pasta específica autorizada para exclusão.
-A wiki ativa e os relatórios não podem ser excluídos pelo offload.
-Configure backup_repo para o backup diário do relatório em health_wiki_root.
-Essa rotina não envia a wiki de arquivos pessoais inteira ao GitHub. Uma pasta
-de documentos ou projetos exige seleção em backup_roots antes do envio.
-Segredos, arquivos ocultos, links, hardlinks e arquivos maiores que 45 MiB
-bloqueiam esse fluxo. A inspeção de segredos é heurística: revise a origem.
-GitHub privado não substitui um backup completo nem criptografia de dados pessoais.
-
-## Publicar no Agent Index
-
-A identidade desta publicação é Mac Guardian (`mac-guardian`). Outros criadores
-que publicarem uma variante escolhem seu próprio slug. Depois do teste de resposta
-e da conexão real do Latch, compile uma imagem que contenha essa identidade:
-
-```sh
-python3 scripts/build_publish.py ghcr.io/SEU_USUARIO/seu-agente:v1
-plow-agents image push ghcr.io/SEU_USUARIO/seu-agente:v1
+python3 scripts/build_publish.py ghcr.io/YOU/your-agent:v1
+plow-agents image push ghcr.io/YOU/your-agent:v1
 plow-agents profile --show
 ```
 
-O build padrão é linux/amd64 para Plow. Para testar localmente em Apple Silicon,
-use --platform linux/arm64. Mantenha a imagem pública e guarde o digest impresso.
-Um administrador habilita o primeiro deploy de um clique após receber UID, slug
-e digest em [Discord do Agent Index](https://aiworthusing.com/discord).
+The default build is `linux/amd64`; use `--platform linux/arm64` for local Apple
+Silicon testing. Keep the image public. An admin enables first one-click deploy
+from the UID, slug and image digest posted by the owner in
+[Agent Index Discord](https://aiworthusing.com/discord). Later updates use
+`plow-agents image push IMAGE --promote SLUG`.
+Register demo video, image and install URL with the
+[official client](https://github.com/plow-pbc/agent-index-client), then post repo,
+commit and ID in the [verification thread](https://discord.com/channels/1519035948191449268/1549100840583700481).
+Plow removes WIP after validation. Source/image publication alone does not do so.
 
-Registre o vídeo, a imagem e o guia pelo
-[cliente oficial](https://github.com/plow-pbc/agent-index-client).
-Os campos --video, --image e --install-url do cliente têm formatos próprios;
-consulte --help antes de usar. Depois, envie repositório, commit e ID na
-[thread de verificação](https://discord.com/channels/1519035948191449268/1549100840583700481).
-A equipe Plow remove WIP após validar. A criação do repositório e o build local
-não equivalem à publicação ou à retirada de WIP.
+## Validation and privacy
 
-## Dados e revisão
-
-private/, plow-credentials e .env ficam fora do Git e do contexto Docker.
-Os relatórios reais contêm nomes e caminhos pessoais e permanecem no Mac.
-Evidências destinadas à publicação usam arquivos de exemplo e resultados de teste.
-PRs deste projeto recebem imagens e vídeos com gh --attach.
-
-Os testes exercitam limpeza, arquivos abertos, alterações depois do plano,
-links simbólicos, reversão de organização e backup/restauração antes de offload.
 ```sh
 python3 -m unittest discover -s tests -v
+python3 scripts/demo_workspace.py --output private/workspace-demo
 ```
+
+Tests use isolated homes and real local Git remotes. They cover unmodified
+branches/indexes, remote verification, exclusion of current/historical secrets,
+full worktree recovery with staged/dirty/ignored data and metadata, approval
+expiry/content changes, nested wiki navigation and transaction undo.
+Image/video evidence is attached to PRs with `gh --attach`.
+
+`private/`, `.env`, `plow-credentials` and listing settings stay outside Git and
+Docker build contexts. Public evidence uses synthetic files. Real reports and
+secret values remain private on the Mac.

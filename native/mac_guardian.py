@@ -26,9 +26,13 @@ import zipfile
 import xml.etree.ElementTree as ET
 from xml.parsers.expat import ExpatError
 
+if str(Path(__file__).parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).parent))
+from workspace_care import WorkspaceCare
+
 GIB = 1024 ** 3
 DAY = 86400
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 DEFAULT_POLICY = {
     "cache_age_days": 14,
     "artifact_age_days": 30,
@@ -45,6 +49,14 @@ DEFAULT_POLICY = {
     "auto_organize": True,
     "auto_name": True,
     "auto_updates": True,
+    "auto_projects": True,
+    "auto_archive_worktrees": True,
+    "project_backup_repo": "",
+    "local_backup_root": "Backup/MacGuardian",
+    "max_projects_per_run": 3,
+    "max_project_refs_per_run": 20,
+    "project_snapshot_max_mib": 256,
+    "worktree_archive_max_mib": 1024,
     "target_free_disk_gib": 30,
     "maintenance_every_hours": 24,
     "organization_every_minutes": 15,
@@ -61,7 +73,7 @@ DEFAULT_POLICY = {
     "organization_max_file_mib": 512,
     "wiki_max_files": 10000,
     "file_wiki_root": "Wiki",
-    "project_roots": ["Code", ".codex/worktrees", "tryzoen-worktrees"],
+    "project_roots": [".", "Code", ".codex/worktrees", "tryzoen-worktrees"],
     "cache_paths": [".npm/_npx", ".cache/uv", "Library/Caches/Aside/Default/Cache",
                     "Library/Caches/Aside/Default/Code Cache"],
     "backup_roots": ["Library/Application Support/MacGuardian/reports"],
@@ -69,10 +81,14 @@ DEFAULT_POLICY = {
     "max_scan_seconds": 90,
 }
 PROTECTED = {".ssh", ".gnupg", ".secrets", ".config", ".codex", ".claude",
-             ".openclaw", ".hermes", ".git", "Library", "Applications"}
+             ".openclaw", ".hermes", ".git", "Library", "Applications", "Backup",
+             "Applications (Parallels)", "Parallels", "VirtualBox VMs"}
 SKIP_NAMES = {"node_modules", "target", ".git", ".venv", "venv", ".next", "dist",
               "build", "__pycache__", ".DS_Store"}
-SECRET_NAME = re.compile(r"(^\.env($|\.)|credentials|secret|token|password|"
+BUNDLE_SUFFIXES = {".app", ".photoslibrary", ".photolibrary", ".musiclibrary", ".framework",
+                   ".xcodeproj", ".xcworkspace", ".bundle", ".fcpbundle", ".logicx", ".band",
+                   ".vmwarevm", ".pvm", ".utm", ".pages", ".numbers", ".key"}
+SECRET_NAME = re.compile(r"(^\.env($|\.|rc$)|^\.(?:npmrc|pypirc|netrc|authinfo)$|kubeconfig|credentials|secret|token|password|"
                          r"\.(pem|key|p12|pfx|kdbx)$|^id_(rsa|ed25519))", re.I)
 SECRET_CONTENT = re.compile(rb"-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|"
                             rb"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{30,}|"
@@ -234,7 +250,23 @@ def signature(path, verify=False):
     return result
 
 
-class Guardian:
+class Guardian(WorkspaceCare):
+    cloud_exclusions = tuple(DEFAULT_POLICY["excluded_roots"])
+    secret_name = SECRET_NAME
+    secret_content = SECRET_CONTENT
+    skip_names = SKIP_NAMES
+    _safe = staticmethod(safe_inside)
+    _hash = staticmethod(digest)
+    _read = staticmethod(read_json)
+    _write = staticmethod(write_json)
+    _now = staticmethod(now)
+
+    def _busy(self, path):
+        return in_use(path)
+
+    def _command(self, argv, timeout=20):
+        return command(argv, timeout)
+
     def __init__(self, home=None, state=None):
         self.home = Path(home or Path.home()).resolve()
         self.state = Path(state or self.home / "Library/Application Support/MacGuardian/state").resolve()
@@ -264,29 +296,51 @@ class Guardian:
         resolved = path.resolve()
         return any(path == self.home / r or path.is_relative_to(self.home / r) or
                    resolved == (self.home / r).resolve() or resolved.is_relative_to((self.home / r).resolve())
-                   for r in self.policy["excluded_roots"])
+                   for r in set(self.policy["excluded_roots"] + DEFAULT_POLICY["excluded_roots"] +
+                                [self.policy["local_backup_root"]]))
 
     def projects(self):
+        if hasattr(self, "_project_cache"):
+            yield from self._project_cache
+            return
+        markers = {"package.json", "Cargo.toml", "pyproject.toml", "go.mod", "Package.swift", "CMakeLists.txt", ".git"}
+        roots = [os.path.abspath(self.home / name) for name in sorted(self.policy["project_roots"], key=lambda n: n == ".")]
+        inventory = read_json(self.state / "project-discovery.json", {})
+        pending = inventory.get("pending", []) if inventory.get("roots") == roots else []
+        if not pending:
+            pending = list(reversed(roots))
+        seen = set(inventory.get("known", [])) if inventory.get("roots") == roots else set()
+        visited = set(inventory.get("visited", [])) if inventory.get("pending") and inventory.get("roots") == roots else set()
         deadline = time.monotonic() + self.policy["max_scan_seconds"]
         count = 0
-        seen = set()
-        for name in self.policy["project_roots"]:
-            root = self.home / name
-            if self.excluded(root):
+        while pending and count < self.policy["max_scan_directories"] and time.monotonic() < deadline:
+            p = Path(os.path.abspath(pending.pop()))
+            if str(p) in visited or not p.is_relative_to(self.home) or self.excluded(p) or p.is_symlink() or not p.is_dir():
                 continue
-            if not root.is_dir() or root.is_symlink():
+            if not any(p.is_relative_to(Path(root)) for root in roots) or (p != self.home and p.name in PROTECTED and str(p) not in roots):
                 continue
-            for base, dirs, files in os.walk(root, followlinks=False):
-                count += 1
-                if count > self.policy["max_scan_directories"] or time.monotonic() > deadline:
-                    self.record("scan_incomplete", {"reason": "project scan budget"})
-                    return
-                p = Path(base)
-                dirs[:] = [d for d in dirs if d not in SKIP_NAMES and not (p / d).is_symlink()]
-                if "package.json" in files or "Cargo.toml" in files or ".git" in files or (p / ".git").is_dir():
-                    if p not in seen:
-                        seen.add(p)
-                        yield p
+            visited.add(str(p))
+            count += 1
+            try:
+                entries = sorted(p.iterdir())
+                if markers & {entry.name for entry in entries}:
+                    seen.add(str(p))
+                pending.extend(str(entry) for entry in reversed(entries) if entry.is_dir() and
+                    not entry.is_symlink() and entry.name not in SKIP_NAMES | PROTECTED and
+                    not entry.name.startswith(".") and entry.suffix.lower() not in BUNDLE_SUFFIXES)
+            except OSError:
+                continue
+        valid = [Path(name) for name in sorted(seen) if Path(name).is_relative_to(self.home) and
+            any(Path(name).is_relative_to(Path(root)) for root in roots) and not self.excluded(Path(name)) and
+            not Path(name).is_symlink() and any((Path(name) / marker).exists() for marker in markers)]
+        recognized = set(valid)
+        self._project_cache = [p for p in valid if (p / ".git").exists() or not any(parent in recognized for parent in p.parents)]
+        write_json(self.state / "project-discovery.json", {"roots": roots, "pending": pending,
+                   "known": [str(p) for p in valid], "visited": sorted(visited) if pending else [],
+                   "complete": not pending, "at": now()})
+        if pending:
+            self.record("scan_incomplete", {"reason": "project scan budget; next cycle resumes"})
+        yield from self._project_cache
 
     def eligible(self, path, kind):
         path = safe_inside(path, self.home)
@@ -304,7 +358,7 @@ class Guardian:
         elif kind in ("node_modules", "target"):
             if path.name != kind:
                 raise ValueError("Nome de artefato inválido")
-            allowed = any(path.is_relative_to(safe_inside(self.home / r, self.home))
+            allowed = any(path.is_relative_to(self.home / r)
                           for r in self.policy["project_roots"])
             if not allowed:
                 raise ValueError("Projeto fora da lista autorizada")
@@ -384,15 +438,16 @@ class Guardian:
                     raise ValueError("Conteúdo alterado após o plano")
                 if in_use(path):
                     raise ValueError("Em uso ou uso não verificável")
-                self.record("delete_started", {"path": str(path), "bytes": stats["bytes"]})
-                shutil.rmtree(path)
-                result = {"path": str(path), "removed": True, "bytes": stats["bytes"]}
+                receipt = self.quarantine_tree(path, item["kind"])
+                result = {"path": str(path), "removed": True, "bytes": stats["bytes"],
+                          "quarantined": True, **receipt}
             except (OSError, ValueError, RuntimeError, TimeoutError) as e:
                 result = {"path": str(path), "removed": False, "reason": str(e)}
             results.append(result)
             self.record("cleanup", result)
         write_json(self.state / "cleanup-plan.json", {})
-        return {"items": results, "deleted_bytes": sum(x.get("bytes", 0) for x in results if x["removed"])}
+        return {"items": results, "deleted_bytes": 0, "freed_bytes": 0,
+                "quarantined_bytes": sum(x.get("bytes", 0) for x in results if x["removed"])}
 
     def folders(self):
         result = []
@@ -451,51 +506,19 @@ class Guardian:
 
     def remove_worktree(self, path, apply=False):
         path = safe_inside(Path(path).expanduser(), self.home)
-        if self.excluded(path):
-            raise ValueError("Worktree em pasta excluída da manutenção local")
-        if not any(path.is_relative_to(safe_inside(self.home / r, self.home))
-                   for r in self.policy["project_roots"]):
-            raise ValueError("Worktree fora das raízes autorizadas")
+        if self.excluded(path) or not any(path.is_relative_to(self.home / r) for r in self.policy["project_roots"]):
+            raise ValueError("Worktree fora das raízes locais permitidas")
         if path.is_relative_to(self.home / ".codex/worktrees"):
             raise ValueError("Worktree do Codex exige arquivamento gerenciado")
         if not (path / ".git").is_file() or (path / ".git").is_symlink():
-            raise ValueError("Só worktrees secundários podem ser removidos")
-        if (path / ".gitmodules").exists():
-            raise ValueError("Worktree com submódulos exige revisão")
-        listing = require(["git", "-C", str(path), "worktree", "list", "--porcelain", "-z"])
-        if listing.split("\0", 1)[0] == "worktree " + str(path):
-            raise ValueError("Worktree principal é protegido")
-        block = next((b for b in listing.split("\0\0") if b.startswith("worktree " + str(path) + "\0")), "")
-        if not block or "\0locked" in block or "\0prunable" in block:
-            raise ValueError("Worktree não verificado, bloqueado ou inconsistente")
-        def validate_files():
-            if require(["git", "-C", str(path), "status", "--porcelain", "--untracked-files=all"]):
-                raise ValueError("Worktree com alterações locais")
-            if require(["git", "-C", str(path), "ls-files", "--others", "--ignored", "--exclude-standard"]):
-                raise ValueError("Arquivos ignorados precisam de backup ou limpeza antes da remoção")
-            data = tree_stats(path, time.monotonic() + 20)
-            if data["newest_mtime"] > time.time() - self.policy["worktree_age_days"] * DAY:
-                raise ValueError("Worktree recente")
-            if in_use(path):
-                raise ValueError("Worktree em uso ou uso não verificável")
-            return data
-        data = validate_files()
-        if not require(["git", "-C", str(path), "remote"]):
-            raise ValueError("Worktree sem remoto")
-        common = Path(require(["git", "-C", str(path), "rev-parse", "--path-format=absolute", "--git-common-dir"]))
-        repository = common
+            raise ValueError("Só worktrees secundários podem ser arquivados")
         if not apply:
-            return {"path": str(path), "bytes": data["bytes"], "ready": False,
-                    "pending": "Atualizar remotos e provar que todos os commits estão preservados"}
-        # Fetch retrieves remote evidence. No commit, push or forced removal occurs.
-        require(["git", "-C", str(path), "fetch", "--all", "--prune"], 120)
-        if require(["git", "-C", str(path), "rev-list", "--count", "--all", "--not", "--remotes"]) != "0":
-            raise ValueError("Há commits ou refs locais ainda não preservados em remotos")
-        validate_files()
-        self.record("worktree_remove_started", {"path": str(path), "repository": str(repository)})
-        require(["git", "--git-dir", str(common), "worktree", "remove", str(path)], 60)
-        self.record("worktree_removed", {"path": str(path), "bytes": data["bytes"]})
-        return {"path": str(path), "removed": not path.exists(), "bytes": data["bytes"]}
+            return {"path": str(path), "ready": False,
+                    "steps": ["snapshot em branch privada", "backup local completo com segredos",
+                              "verificação de conteúdo e arquivos em uso", "arquivamento reversível"]}
+        repo = self.private_project_repo()
+        snapshot = self.project_snapshot(path, repo)
+        return self.archive_worktree(path, snapshot)
 
     def background(self, previous=None):
         items = []
@@ -636,7 +659,7 @@ class Guardian:
             if remaining <= 0:
                 raise TimeoutError("Próxima rotina retoma as atualizações")
             return command(argv, min(seconds, remaining), env=env)
-        def update(key, argv, verify):
+        def update(key, argv, verify, target):
             nonlocal attempted
             age = age_seconds(attempts.get(key, {}).get("at"))
             if attempted >= self.policy["max_updates_per_run"] or (age is not None and age <
@@ -645,6 +668,12 @@ class Guardian:
             if not apply:
                 results.append({"package": key, "status": "planned"})
                 attempted += 1
+                return
+            payload = {"package": key, "command": argv, "target": target}
+            if not self.consume_approval("package_update", payload):
+                attempted += 1
+                results.append({"package": key, "status": "awaiting_approval",
+                                **self.request_approval("package_update", payload)})
                 return
             attempted += 1
             attempts[key] = {"at": now(), "status": "started"}
@@ -747,7 +776,7 @@ class Guardian:
                             return all(s.get("signed") and s.get("verified") is True and
                                        s.get("gatekeeper") == "accepted" for s in signatures)
                         return True
-                    update("brew:" + token, ["brew", "upgrade", "--" + kind, token], verify)
+                    update("brew:" + token, ["brew", "upgrade", "--" + kind, token], verify, item)
         if shutil.which("mas"):
             raw = run(["mas", "outdated"], 60)
             if not raw["ok"]:
@@ -767,7 +796,7 @@ class Guardian:
                         check = run(["mas", "outdated"], 60)
                         return check["ok"] and not any(row.split() and row.split()[0] == app_id
                                                       for row in check["stdout"].splitlines())
-                    update("mas:" + app_id, ["mas", "upgrade", app_id], verify)
+                    update("mas:" + app_id, ["mas", "upgrade", app_id], verify, line.strip())
         return {"items": results, "updated": sum(r["status"] == "updated" for r in results)}
 
     def maintain(self, apply=True):
@@ -786,7 +815,7 @@ class Guardian:
                 data = invoke()
                 result["stages"].append({"name": name, "ok": True, "result": data})
                 return True
-            except (OSError, ValueError, RuntimeError, TimeoutError, KeyError) as e:
+            except (OSError, ValueError, RuntimeError, TimeoutError, KeyError, subprocess.TimeoutExpired) as e:
                 result["stages"].append({"name": name, "ok": False, "error": str(e)})
                 return False
         if apply:
@@ -812,12 +841,14 @@ class Guardian:
             stage("naming", lambda: self.rename(apply))
         if apply:
             result["file_transaction"] = self.combine_file_transactions(result["stages"])
+        if self.policy["auto_projects"] and time.monotonic() < deadline - 120:
+            stage("projects", lambda: self.care_for_projects(apply, deadline))
         age = age_seconds(report.get("full_checked_at"))
         if apply and (age is None or age > self.policy["audit_stale_hours"] * 3600):
             stage("audit", lambda: self.check(True))
         if self.policy["auto_updates"] and time.monotonic() < deadline - 30:
             stage("updates", lambda: self.package_updates(state, apply, deadline))
-        if self.policy["backup_repo"] and due("backup") and time.monotonic() < deadline - 180:
+        if self.policy["backup_repo"] and self.cloud_status()["provider"] != "none" and due("backup") and time.monotonic() < deadline - 180:
             if apply and stage("wiki_backup", lambda: self.backup(self.home / self.policy["health_wiki_root"],
                                                                   self.policy["backup_repo"])):
                 state["last_backup_at"] = now()
@@ -866,6 +897,11 @@ class Guardian:
                 "exception": maintenance.get("exception", False),
                 "paused": maintenance.get("paused", False), "paused_until": maintenance.get("paused_until"),
                 "pending_naming": read_json(self.state / "naming-pending.json", {}).get("items", [])[:20],
+                "cloud": self.cloud_status(),
+                "backup_folder": str(self.home / self.policy["local_backup_root"]),
+                "projects": read_json(self.state / "projects.json", {}),
+                "pending_approvals": [p for p in read_json(self.state / "approvals.json", [])
+                                      if not p.get("consumed_at") and not self.approval_valid(p)],
                 "pending_reviews": [r for r in read_json(self.state / "reviews.json", []) if not r.get("reviewed_at")]}
 
     def review(self, event_id, evidence):
@@ -1083,10 +1119,18 @@ class Guardian:
                 return f.read(len(marker.encode())) == marker.encode()
         def generated_page(folder, name, content):
             path = folder / name
+            owner = "<!-- Mac Guardian page: " + urllib.parse.quote(name) + " -->\n"
             # Never replace a personal page, even if it has an index filename.
             for i in range(100):
-                if (not path.exists() and not path.is_symlink()) or generated(path):
-                    private_text(path, marker + content)
+                ours = False
+                if generated(path):
+                    with path.open("rb") as stream:
+                        stream.readline()
+                        role = stream.readline()
+                    ours = role == owner.encode() or (path.name == name and not role.startswith(b"<!-- Mac Guardian page:"))
+                if (not path.exists() and not path.is_symlink()) or ours:
+                    if content is not None:
+                        private_text(path, marker + owner + content)
                     return path
                 path = folder / ("_MacGuardian-" + str(i + 1) + ".md")
             raise ValueError("Não foi possível reservar um índice da wiki")
@@ -1097,9 +1141,11 @@ class Guardian:
         for category in sorted(root.iterdir()):
             if not category.is_dir() or category.is_symlink() or category.name.startswith("."):
                 continue
-            rows, dirs = [], [category]
+            rows, dirs, subject_rows, children = [], [category], {}, {}
             while dirs:
                 folder = dirs.pop()
+                subject_rows.setdefault(folder, [])
+                children.setdefault(folder, [])
                 for path in sorted(folder.iterdir()):
                     if time.monotonic() > deadline or count >= self.policy["wiki_max_files"]:
                         incomplete = True
@@ -1109,13 +1155,31 @@ class Guardian:
                         continue
                     if path.is_dir():
                         dirs.append(path)
+                        children[folder].append(path)
                     elif path.is_file():
                         if path.suffix.lower() == ".md" and generated(path):
                             continue
                         count += 1
                         label = path.relative_to(category).as_posix().replace("[", "\\[").replace("]", "\\]").replace("\n", " ")
                         rows.append(f"- [{label}]({urllib.parse.quote(path.relative_to(category).as_posix())})")
-            index = generated_page(category, "_Index.md", "# " + category.name + "\n\n" + "\n".join(sorted(rows)) + "\n")
+                        subject_rows.setdefault(path.parent, []).append(path)
+            # Reserve index names first so links remain correct beside personal indexes.
+            indexes = {folder: generated_page(folder, "_Index.md", None) for folder in subject_rows}
+            for folder, paths in subject_rows.items():
+                links = ["# " + folder.name, ""]
+                if folder != category:
+                    links += [f"[Voltar]({urllib.parse.quote(os.path.relpath(indexes[folder.parent], folder))})", ""]
+                for child in sorted(children.get(folder, [])):
+                    if child in indexes:
+                        label = child.name.replace("[", "\\[").replace("]", "\\]")
+                        links.append(f"- [{label}/]({urllib.parse.quote(indexes[child].relative_to(folder).as_posix())})")
+                for path in paths:
+                    label = path.name.replace("[", "\\[").replace("]", "\\]").replace("\n", " ")
+                    links.append(f"- [{label}]({urllib.parse.quote(path.name)})")
+                if folder == category and any(p != category for p in subject_rows):
+                    links += ["", "## Todos os arquivos", "", *sorted(rows)]
+                generated_page(folder, "_Index.md", "\n".join(links) + "\n")
+            index = indexes[category]
             label = category.name.replace("|", "\\|").replace("[", "\\[").replace("]", "\\]")
             pages.append(f"| [{label}]({urllib.parse.quote(index.relative_to(root).as_posix())}) | {len(rows)} |")
             if incomplete:
@@ -1126,6 +1190,17 @@ class Guardian:
             if path.is_dir() and not path.is_symlink() and not path.name.startswith(".") and path.name not in PROTECTED and not self.excluded(path):
                 label = path.name.replace("[", "\\[").replace("]", "\\]")
                 pages.append(f"- [{label}](file://{urllib.parse.quote(str(path))})")
+        snapshots = read_json(self.state / "project-snapshots.json", {})
+        project_rows = ["# Projetos", "", "Caminhos de trabalho preservados. Código em branches privadas; segredos no backup local.", ""]
+        for project in self.projects():
+            if not (project / ".git").exists():
+                continue
+            label = self.relative(project).replace("[", "\\[").replace("]", "\\]").replace("\n", " ")
+            saved = snapshots.get(str(project) + "|working", {})
+            status = "snapshot remoto verificado" if saved.get("verified") else "aguardando snapshot"
+            project_rows.append(f"- [{label}](file://{urllib.parse.quote(str(project))}) · {status}")
+        project_page = generated_page(root, "Projects.md", "\n".join(project_rows) + "\n")
+        pages.append(f"\n[Projetos e snapshots]({urllib.parse.quote(project_page.name)})")
         pages += ["", "Arquivos recentes ou em uso entram na wiki quando ficam estáveis.",
                   "Projetos, bibliotecas de apps e configurações mantêm seus locais."]
         if incomplete:
@@ -1151,7 +1226,7 @@ class Guardian:
         moves = []
         cutoff = time.time() - self.policy["organization_stable_minutes"] * 60
         vault = safe_inside(self.home / self.policy["file_wiki_root"], self.home)
-        protected = [self.home / name for name in self.policy["project_roots"]] + [
+        protected = [self.home / name for name in self.policy["project_roots"] if name != "."] + [
             self.home / "Documents/Codex", self.home / self.policy["health_wiki_root"], vault]
         protected = [p.resolve() for p in protected]
         seen, reserved, scanned = set(), set(), 0
@@ -1169,10 +1244,9 @@ class Guardian:
                         (base / name).exists() for name in (".git", ".obsidian", "wiki.toml", "package.json", "Cargo.toml", "CMakeLists.txt", "pyproject.toml", "requirements.txt", "go.mod", "Package.swift")):
                     dirs[:] = []
                     continue
-                # At the home root, examine loose files; named roots handle recursion.
-                dirs[:] = [] if folder == "." else [name for name in dirs if not name.startswith(".")
+                dirs[:] = sorted(name for name in dirs if not name.startswith(".")
                     and name not in PROTECTED | SKIP_NAMES and not (base / name).is_symlink()
-                    and not Path(name).suffix.lower() in (".app", ".photoslibrary", ".musiclibrary", ".framework", ".xcodeproj")]
+                    and Path(name).suffix.lower() not in BUNDLE_SUFFIXES)
                 for filename in sorted(files):
                     p = base / filename
                     category = categories.get(p.suffix.lower())
@@ -1196,6 +1270,8 @@ class Guardian:
                                 continue
                             if context.get("confidence") == "high":
                                 dest = dest.with_name(context["suggested_name"])
+                            if context.get("explicit_topic"):
+                                dest = vault / category / context["explicit_topic"] / dest.name
                         safe_inside(p, self.home)
                         safe_inside(dest, self.home)
                         if dest in reserved or dest.exists() or dest.is_symlink():
@@ -1315,13 +1391,19 @@ class Guardian:
                 title, basis, confidence = metadata["stdout"].strip().strip('"'), "spotlight_title", "high"
         if SECRET_CONTENT.search((title + "\n" + text).encode()):
             return {"path": str(path), "status": "protected_content"}
+        topic_match = re.search(r"(?im)^(?:assunto|topic|projeto|project|cliente|client)\s*:\s*([^\n]{3,80})$", text[:4000])
+        explicit_topic = ""
+        if topic_match:
+            explicit_topic = unicodedata.normalize("NFKD", topic_match[1]).encode("ascii", "ignore").decode().lower()
+            explicit_topic = re.sub(r"[^a-z0-9]+", "-", explicit_topic).strip("-")[:80]
         generic = re.compile(r"^(?:untitled|document\d*|documento\d*|scan\d*|img[_ -]?\d+|screenshot|captura de tela)$", re.I)
         title = re.sub(r"\s+", " ", title).strip()
         filename_title = basis == "spotlight_title" and (title.casefold() == path.name.casefold() or
                         re.search(r"\.(pdf|docx?|pptx?|xlsx?|md|txt|jpe?g|png|mov|mp4)$", title, re.I))
         if not 8 <= len(title) <= 100 or filename_title or generic.fullmatch(title) or "�" in title or re.search(r"https?://|\S+@\S+", title):
             return {"path": str(path), "status": "needs_context", "basis": basis,
-                    "sha256": digest(path), "text_excerpt": text[:1200], "topic": path.parent.name}
+                    "sha256": digest(path), "text_excerpt": text[:1200], "topic": path.parent.name,
+                    "explicit_topic": explicit_topic}
         slug = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode().lower()
         slug = re.sub(r"[^a-z0-9]+", "-", slug).strip("-")[:100].rstrip("-")
         if len(slug) < 5:
@@ -1344,7 +1426,7 @@ class Guardian:
             name = slug + suffix
         return {"path": str(path), "status": "named", "title": title, "basis": basis,
                 "suggested_name": name, "topic": path.parent.name, "sha256": digest(path),
-                "text_excerpt": text[:1200], "confidence": confidence}
+                "text_excerpt": text[:1200], "confidence": confidence, "explicit_topic": explicit_topic}
 
     def rename_file(self, path, name, expected_hash, evidence):
         path = safe_inside(Path(path).expanduser(), self.home)
@@ -1384,6 +1466,42 @@ class Guardian:
             pending["items"] = [p for p in pending["items"] if p["path"] not in (str(path), str(destination))]
             write_json(self.state / "naming-pending.json", pending)
         return result
+
+    def classify_file(self, path, category, topic, name, expected_hash, evidence):
+        path = safe_inside(Path(path).expanduser(), self.home)
+        vault = safe_inside(self.home / self.policy["file_wiki_root"], self.home)
+        if self.excluded(path) or not evidence.strip() or SECRET_NAME.search(path.name) or path.suffix.lower() not in {
+                ".pdf", ".docx", ".txt", ".md", ".xlsx", ".csv", ".pptx", ".png", ".jpg", ".jpeg",
+                ".webp", ".mp4", ".mov", ".mp3", ".wav", ".m4a", ".fig", ".sketch", ".zip", ".dmg"}:
+            raise ValueError("Classificação exige evidência e uma origem pessoal permitida")
+        for parent in [path.parent, *path.parents]:
+            if parent == self.home:
+                break
+            if parent.name in PROTECTED or parent.suffix.lower() in BUNDLE_SUFFIXES or any((parent / marker).exists() for marker in
+                    (".git", ".obsidian", "wiki.toml", "package.json", "Cargo.toml", "pyproject.toml", "go.mod")):
+                raise ValueError("Configurações, projetos e bibliotecas preservam seus caminhos")
+        if category not in {"Documentos", "Planilhas", "Apresentacoes", "Imagens", "Videos", "Audio", "Design", "Arquivos", "Instaladores"}:
+            raise ValueError("Categoria inválida")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_. -]{1,79}", topic) or topic in (".", ".."):
+            raise ValueError("Assunto inválido")
+        if Path(name).name != name or SECRET_NAME.search(name) or name.startswith((".", "_")) or re.search(r"[\\\x00-\x1f\x7f]", name) or len(name.encode()) > 240 or Path(name).suffix.lower() != path.suffix.lower():
+            raise ValueError("Nome inválido; preserve extensão")
+        context = self.naming_context(path)
+        if context["status"] in ("protected_content", "generated_index") or digest(path) != expected_hash:
+            raise ValueError("Arquivo protegido ou alterado desde a análise")
+        s = path.stat()
+        if s.st_nlink != 1 or s.st_mtime > time.time() - self.policy["organization_stable_minutes"] * 60:
+            raise ValueError("Arquivo recente ou vinculado")
+        dest = safe_inside(vault / category / topic / name, self.home)
+        if dest == path:
+            return {"items": [], "unchanged": True}
+        if dest.exists() or dest.is_symlink():
+            dest = dest.with_name(dest.stem + "-" + hashlib.sha256(self.relative(path).encode()).hexdigest()[:8] + dest.suffix)
+        item = {"source": str(path), "destination": str(dest), "sha256": expected_hash,
+                "device": s.st_dev, "inode": s.st_ino, "mtime_ns": s.st_mtime_ns,
+                "ctime_ns": s.st_ctime_ns, "bytes": s.st_size,
+                "name_basis": "agent_context_classification", "evidence": evidence[:2000]}
+        return self.file_moves([item], True, time.monotonic() + self.policy["max_scan_seconds"])
 
     def rename(self, apply=False):
         vault = safe_inside(self.home / self.policy["file_wiki_root"], self.home)
@@ -1577,22 +1695,13 @@ class Guardian:
                     raise ValueError("Wiki ativa tem backup, mas não pode ser removida")
                 if in_use(source):
                     raise ValueError("Origem em uso ou uso não verificável")
-                # Revalidate after lsof, then remove only the backed-up files.
+                # Remote files alone do not preserve all local metadata. Keep an exact
+                # same-volume recovery copy before taking the original out of use.
                 if self.backup_manifest(source) != manifest:
                     raise ValueError("Origem mudou; exclusão cancelada")
-                for rel, expected in manifest.items():
-                    path = safe_inside(source / rel, source)
-                    if digest(path) != expected:
-                        raise ValueError("Origem mudou durante a exclusão; interrompida")
-                    path.unlink()
-                    self.record("offload_file", {"snapshot": snapshot_id, "path": str(path),
-                                                 "sha256": expected})
-                for root, dirs, names in os.walk(source, topdown=False):
-                    try:
-                        Path(root).rmdir()
-                    except OSError:
-                        pass
+                receipt["recovery"] = self.quarantine_tree(source, "verified_backup")
                 receipt["offloaded"] = not source.exists()
+                receipt["freed_bytes"] = 0
                 if source.exists():
                     receipt["remaining"] = "Novos arquivos ou diretórios ainda estão na origem."
             write_json(receipt_path, receipt)
@@ -1623,6 +1732,28 @@ def main():
     review.add_argument("--evidence", required=True)
     sub.add_parser("plan")
     sub.add_parser("worktrees")
+    sub.add_parser("cloud-status")
+    cloud = sub.add_parser("configure-cloud")
+    cloud.add_argument("--provider", choices=["icloud", "google-drive", "both", "none"])
+    cloud.add_argument("--root", action="append", default=[])
+    cloud.add_argument("--asked", action="store_true")
+    approval = sub.add_parser("approve")
+    approval.add_argument("--id", required=True)
+    approval.add_argument("--evidence", required=True)
+    projects = sub.add_parser("projects")
+    projects.add_argument("--dry-run", action="store_true")
+    project = sub.add_parser("project-snapshot")
+    project.add_argument("--path", required=True)
+    for name in ("restore-quarantine", "restore-worktree"):
+        recovery = sub.add_parser(name)
+        recovery.add_argument("--receipt", required=True)
+    purge = sub.add_parser("purge-quarantine")
+    purge.add_argument("--receipt", required=True)
+    purge.add_argument("--apply", action="store_true")
+    purge.add_argument("--approval")
+    restore_secret = sub.add_parser("restore-secret")
+    restore_secret.add_argument("--identity", required=True)
+    restore_secret.add_argument("--version", required=True)
     worktree = sub.add_parser("remove-worktree")
     worktree.add_argument("--path", required=True)
     worktree.add_argument("--apply", action="store_true")
@@ -1636,6 +1767,13 @@ def main():
     rename_file.add_argument("--name", required=True)
     rename_file.add_argument("--sha256", required=True)
     rename_file.add_argument("--evidence", required=True)
+    classify = sub.add_parser("classify-file")
+    classify.add_argument("--path", required=True)
+    classify.add_argument("--category", required=True)
+    classify.add_argument("--topic", required=True)
+    classify.add_argument("--name", required=True)
+    classify.add_argument("--sha256", required=True)
+    classify.add_argument("--evidence", required=True)
     undo = sub.add_parser("undo")
     undo.add_argument("transaction")
     backup = sub.add_parser("backup")
@@ -1648,14 +1786,14 @@ def main():
             raise ValueError("O componente nativo exige macOS; --home serve apenas para testes isolados")
         g = Guardian(args.home, args.state)
         # Read-only conversation commands remain available during maintenance.
-        with contextlib.nullcontext() if args.action in ("status", "doctor", "history", "naming-context") else g.lock():
+        with contextlib.nullcontext() if args.action in ("status", "doctor", "history", "naming-context", "cloud-status") else g.lock():
             if args.action == "init":
                 p = g.state / "policy.json"
                 if not p.exists():
                     write_json(p, DEFAULT_POLICY)
                 else:
                     write_json(p, g.policy)
-                result = {"policy": str(p), "state": str(g.state)}
+                result = {"policy": str(p), "state": str(g.state), "backup_folder": str(g.backup_folder())}
             elif args.action == "check":
                 report = g.check(args.full)
                 result = {"snapshot": str(g.state / "snapshot.json"),
@@ -1681,6 +1819,24 @@ def main():
                 result = g.cleanup_plan()
             elif args.action == "worktrees":
                 result = g.worktrees()
+            elif args.action == "cloud-status":
+                result = g.cloud_status()
+            elif args.action == "configure-cloud":
+                result = g.configure_cloud(args.provider, args.root, args.asked)
+            elif args.action == "approve":
+                result = g.approve(args.id, args.evidence)
+            elif args.action == "projects":
+                result = g.care_for_projects(not args.dry_run)
+            elif args.action == "project-snapshot":
+                result = g.project_snapshot(args.path, g.private_project_repo())
+            elif args.action == "restore-quarantine":
+                result = g.restore_quarantine(args.receipt)
+            elif args.action == "purge-quarantine":
+                result = g.purge_quarantine(args.receipt, args.apply, args.approval)
+            elif args.action == "restore-worktree":
+                result = g.restore_worktree(args.receipt)
+            elif args.action == "restore-secret":
+                result = g.restore_secret(args.identity, args.version)
             elif args.action == "remove-worktree":
                 result = g.remove_worktree(args.path, args.apply)
             elif args.action == "clean":
@@ -1693,6 +1849,8 @@ def main():
                 result = g.naming_context(args.path)
             elif args.action == "rename-file":
                 result = g.rename_file(args.path, args.name, args.sha256, args.evidence)
+            elif args.action == "classify-file":
+                result = g.classify_file(args.path, args.category, args.topic, args.name, args.sha256, args.evidence)
             elif args.action == "undo":
                 result = g.undo(args.transaction)
             elif args.action == "backup":
@@ -1702,7 +1860,7 @@ def main():
         print(json.dumps({"status": "busy", "executed": False,
                           "detail": "Outra rotina está ativa; o próximo ciclo retoma."}, ensure_ascii=False))
         return 0
-    except (OSError, ValueError, RuntimeError, TimeoutError, KeyError) as e:
+    except (OSError, ValueError, RuntimeError, TimeoutError, KeyError, subprocess.TimeoutExpired) as e:
         print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False), file=sys.stderr)
         return 1
     return 0
