@@ -32,7 +32,7 @@ from workspace_care import WorkspaceCare
 
 GIB = 1024 ** 3
 DAY = 86400
-VERSION = "0.3.0"
+VERSION = "0.3.2"
 DEFAULT_POLICY = {
     "cache_age_days": 14,
     "artifact_age_days": 30,
@@ -940,6 +940,37 @@ class Guardian(WorkspaceCare):
                 "coverage": report.get("coverage", {}),
                 "next_action": "maintain" if any(not c["ok"] for c in checks) else None}
 
+    def setup_status(self):
+        """Current native readiness, never inferred from earlier conversation."""
+        diagnosis = self.doctor()
+        failed = {c["name"] for c in diagnosis["checks"] if not c["ok"]}
+        maintenance = read_json(self.state / "maintenance.json", {})
+        cloud = self.cloud_status()
+        status, action = "READY", None
+        if "macos" in failed:
+            status, action = "SETUP_NEEDED", "connect-real-mac"
+        elif "python" in failed:
+            status, action = "SETUP_NEEDED", "install-python-3.11-or-newer"
+        elif "private_state" in failed:
+            status, action = "SETUP_NEEDED", "repair-state-permissions"
+        elif failed & {"local.macguardian.monitor", "local.macguardian.audit"}:
+            status, action = "SETUP_NEEDED", "install-native"
+        elif failed & {"monitor", "audit"}:
+            status, action = "ATTENTION_NEEDED", "check-collectors"
+        elif maintenance.get("exception"):
+            status, action = "ATTENTION_NEEDED", "inspect-maintenance-failure"
+        elif maintenance.get("paused"):
+            status = "PAUSED"
+        # Storage preference and optional tools never block local reversible care.
+        return {"version": VERSION, "status": status, "next": action,
+                "scope": "native-mac", "relay_verified": False,
+                "care_ready": status == "READY",
+                "worker_in_progress": maintenance.get("in_progress", False),
+                "checks": diagnosis["checks"], "tools": diagnosis["tools"],
+                "cloud": cloud, "question": cloud["question"] if cloud["needs_question"] else None,
+                "github_auth": "not-checked",
+                "question_blocks_local_care": False}
+
     def check(self, full=False):
         previous = read_json(self.state / "snapshot.json", {})
         disk = shutil.disk_usage(self.home)
@@ -1720,6 +1751,7 @@ def main():
     check.add_argument("--full", action="store_true")
     sub.add_parser("status")
     sub.add_parser("doctor")
+    sub.add_parser("setup-status")
     history = sub.add_parser("history")
     history.add_argument("--hours", type=int, default=24)
     maintain = sub.add_parser("maintain")
@@ -1786,7 +1818,7 @@ def main():
             raise ValueError("O componente nativo exige macOS; --home serve apenas para testes isolados")
         g = Guardian(args.home, args.state)
         # Read-only conversation commands remain available during maintenance.
-        with contextlib.nullcontext() if args.action in ("status", "doctor", "history", "naming-context", "cloud-status") else g.lock():
+        with contextlib.nullcontext() if args.action in ("status", "doctor", "setup-status", "history", "naming-context", "cloud-status") else g.lock():
             if args.action == "init":
                 p = g.state / "policy.json"
                 if not p.exists():
@@ -1803,6 +1835,8 @@ def main():
                 result = g.status()
             elif args.action == "doctor":
                 result = g.doctor()
+            elif args.action == "setup-status":
+                result = g.setup_status()
             elif args.action == "history":
                 if not 1 <= args.hours <= g.policy["history_days"] * 24:
                     raise ValueError("Período fora do histórico disponível")

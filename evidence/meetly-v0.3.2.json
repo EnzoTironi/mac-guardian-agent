@@ -1,0 +1,471 @@
+{
+  "version": "0.3.2",
+  "scope": "synthetic-native-readiness",
+  "launchd_simulated": true,
+  "real_mac_operated": false,
+  "message_delivery_tested": false,
+  "cases": {
+    "first-contact": {
+      "version": "0.3.2",
+      "status": "READY",
+      "next": null,
+      "scope": "native-mac",
+      "relay_verified": false,
+      "care_ready": true,
+      "worker_in_progress": false,
+      "checks": [
+        {
+          "name": "macos",
+          "ok": true,
+          "detail": "darwin"
+        },
+        {
+          "name": "python",
+          "ok": true,
+          "detail": "3.14.7"
+        },
+        {
+          "name": "private_state",
+          "ok": true,
+          "detail": "/Users/demo/Library/Application Support/MacGuardian/state"
+        },
+        {
+          "name": "monitor",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.006098031997680664,
+            "maximum_seconds": 2700
+          }
+        },
+        {
+          "name": "audit",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.005038022994995117,
+            "maximum_seconds": 129600
+          }
+        },
+        {
+          "name": "local.macguardian.monitor",
+          "ok": true,
+          "detail": "loaded"
+        },
+        {
+          "name": "local.macguardian.audit",
+          "ok": true,
+          "detail": "loaded"
+        }
+      ],
+      "tools": {
+        "git": true,
+        "lsof": false,
+        "brew": false,
+        "mas": false,
+        "gh": true,
+        "codesign": false,
+        "spctl": false,
+        "pdftotext": false,
+        "tesseract": false,
+        "ffprobe": false
+      },
+      "cloud": {
+        "configured": false,
+        "provider": null,
+        "detected": [],
+        "needs_question": true,
+        "awaiting_answer": true,
+        "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+        "destinations": [],
+        "secrets_allowed": false
+      },
+      "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+      "github_auth": "not-checked",
+      "question_blocks_local_care": false
+    },
+    "awaiting-answer": {
+      "version": "0.3.2",
+      "status": "READY",
+      "next": null,
+      "scope": "native-mac",
+      "relay_verified": false,
+      "care_ready": true,
+      "worker_in_progress": false,
+      "checks": [
+        {
+          "name": "macos",
+          "ok": true,
+          "detail": "darwin"
+        },
+        {
+          "name": "python",
+          "ok": true,
+          "detail": "3.14.7"
+        },
+        {
+          "name": "private_state",
+          "ok": true,
+          "detail": "/Users/demo/Library/Application Support/MacGuardian/state"
+        },
+        {
+          "name": "monitor",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.007707118988037109,
+            "maximum_seconds": 2700
+          }
+        },
+        {
+          "name": "audit",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.006644010543823242,
+            "maximum_seconds": 129600
+          }
+        },
+        {
+          "name": "local.macguardian.monitor",
+          "ok": true,
+          "detail": "loaded"
+        },
+        {
+          "name": "local.macguardian.audit",
+          "ok": true,
+          "detail": "loaded"
+        }
+      ],
+      "tools": {
+        "git": true,
+        "lsof": false,
+        "brew": false,
+        "mas": false,
+        "gh": true,
+        "codesign": false,
+        "spctl": false,
+        "pdftotext": false,
+        "tesseract": false,
+        "ffprobe": false
+      },
+      "cloud": {
+        "configured": false,
+        "provider": null,
+        "detected": [],
+        "needs_question": false,
+        "awaiting_answer": true,
+        "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+        "destinations": [],
+        "secrets_allowed": false
+      },
+      "question": null,
+      "github_auth": "not-checked",
+      "question_blocks_local_care": false
+    },
+    "local-only": {
+      "version": "0.3.2",
+      "status": "READY",
+      "next": null,
+      "scope": "native-mac",
+      "relay_verified": false,
+      "care_ready": true,
+      "worker_in_progress": false,
+      "checks": [
+        {
+          "name": "macos",
+          "ok": true,
+          "detail": "darwin"
+        },
+        {
+          "name": "python",
+          "ok": true,
+          "detail": "3.14.7"
+        },
+        {
+          "name": "private_state",
+          "ok": true,
+          "detail": "/Users/demo/Library/Application Support/MacGuardian/state"
+        },
+        {
+          "name": "monitor",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.011775016784667969,
+            "maximum_seconds": 2700
+          }
+        },
+        {
+          "name": "audit",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.010712146759033203,
+            "maximum_seconds": 129600
+          }
+        },
+        {
+          "name": "local.macguardian.monitor",
+          "ok": true,
+          "detail": "loaded"
+        },
+        {
+          "name": "local.macguardian.audit",
+          "ok": true,
+          "detail": "loaded"
+        }
+      ],
+      "tools": {
+        "git": true,
+        "lsof": false,
+        "brew": false,
+        "mas": false,
+        "gh": true,
+        "codesign": false,
+        "spctl": false,
+        "pdftotext": false,
+        "tesseract": false,
+        "ffprobe": false
+      },
+      "cloud": {
+        "configured": true,
+        "provider": "none",
+        "detected": [],
+        "needs_question": false,
+        "awaiting_answer": false,
+        "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+        "destinations": [],
+        "secrets_allowed": false
+      },
+      "question": null,
+      "github_auth": "not-checked",
+      "question_blocks_local_care": false
+    },
+    "paused": {
+      "version": "0.3.2",
+      "status": "PAUSED",
+      "next": null,
+      "scope": "native-mac",
+      "relay_verified": false,
+      "care_ready": false,
+      "worker_in_progress": false,
+      "checks": [
+        {
+          "name": "macos",
+          "ok": true,
+          "detail": "darwin"
+        },
+        {
+          "name": "python",
+          "ok": true,
+          "detail": "3.14.7"
+        },
+        {
+          "name": "private_state",
+          "ok": true,
+          "detail": "/Users/demo/Library/Application Support/MacGuardian/state"
+        },
+        {
+          "name": "monitor",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.013461112976074219,
+            "maximum_seconds": 2700
+          }
+        },
+        {
+          "name": "audit",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.012398004531860352,
+            "maximum_seconds": 129600
+          }
+        },
+        {
+          "name": "local.macguardian.monitor",
+          "ok": true,
+          "detail": "loaded"
+        },
+        {
+          "name": "local.macguardian.audit",
+          "ok": true,
+          "detail": "loaded"
+        }
+      ],
+      "tools": {
+        "git": true,
+        "lsof": false,
+        "brew": false,
+        "mas": false,
+        "gh": true,
+        "codesign": false,
+        "spctl": false,
+        "pdftotext": false,
+        "tesseract": false,
+        "ffprobe": false
+      },
+      "cloud": {
+        "configured": true,
+        "provider": "none",
+        "detected": [],
+        "needs_question": false,
+        "awaiting_answer": false,
+        "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+        "destinations": [],
+        "secrets_allowed": false
+      },
+      "question": null,
+      "github_auth": "not-checked",
+      "question_blocks_local_care": false
+    },
+    "missing-jobs": {
+      "version": "0.3.2",
+      "status": "SETUP_NEEDED",
+      "next": "install-native",
+      "scope": "native-mac",
+      "relay_verified": false,
+      "care_ready": false,
+      "worker_in_progress": false,
+      "checks": [
+        {
+          "name": "macos",
+          "ok": true,
+          "detail": "darwin"
+        },
+        {
+          "name": "python",
+          "ok": true,
+          "detail": "3.14.7"
+        },
+        {
+          "name": "private_state",
+          "ok": true,
+          "detail": "/Users/demo/Library/Application Support/MacGuardian/state"
+        },
+        {
+          "name": "monitor",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.015225887298583984,
+            "maximum_seconds": 2700
+          }
+        },
+        {
+          "name": "audit",
+          "ok": true,
+          "detail": {
+            "age_seconds": 0.014164209365844727,
+            "maximum_seconds": 129600
+          }
+        },
+        {
+          "name": "local.macguardian.monitor",
+          "ok": false,
+          "detail": "fixture job absent"
+        },
+        {
+          "name": "local.macguardian.audit",
+          "ok": false,
+          "detail": "fixture job absent"
+        }
+      ],
+      "tools": {
+        "git": true,
+        "lsof": false,
+        "brew": false,
+        "mas": false,
+        "gh": true,
+        "codesign": false,
+        "spctl": false,
+        "pdftotext": false,
+        "tesseract": false,
+        "ffprobe": false
+      },
+      "cloud": {
+        "configured": true,
+        "provider": "none",
+        "detected": [],
+        "needs_question": false,
+        "awaiting_answer": false,
+        "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+        "destinations": [],
+        "secrets_allowed": false
+      },
+      "question": null,
+      "github_auth": "not-checked",
+      "question_blocks_local_care": false
+    },
+    "stale-collectors": {
+      "version": "0.3.2",
+      "status": "ATTENTION_NEEDED",
+      "next": "check-collectors",
+      "scope": "native-mac",
+      "relay_verified": false,
+      "care_ready": false,
+      "worker_in_progress": false,
+      "checks": [
+        {
+          "name": "macos",
+          "ok": true,
+          "detail": "darwin"
+        },
+        {
+          "name": "python",
+          "ok": true,
+          "detail": "3.14.7"
+        },
+        {
+          "name": "private_state",
+          "ok": true,
+          "detail": "/Users/demo/Library/Application Support/MacGuardian/state"
+        },
+        {
+          "name": "monitor",
+          "ok": false,
+          "detail": {
+            "age_seconds": null,
+            "maximum_seconds": 2700
+          }
+        },
+        {
+          "name": "audit",
+          "ok": false,
+          "detail": {
+            "age_seconds": null,
+            "maximum_seconds": 129600
+          }
+        },
+        {
+          "name": "local.macguardian.monitor",
+          "ok": true,
+          "detail": "loaded"
+        },
+        {
+          "name": "local.macguardian.audit",
+          "ok": true,
+          "detail": "loaded"
+        }
+      ],
+      "tools": {
+        "git": true,
+        "lsof": false,
+        "brew": false,
+        "mas": false,
+        "gh": true,
+        "codesign": false,
+        "spctl": false,
+        "pdftotext": false,
+        "tesseract": false,
+        "ffprobe": false
+      },
+      "cloud": {
+        "configured": true,
+        "provider": "none",
+        "detected": [],
+        "needs_question": false,
+        "awaiting_answer": false,
+        "question": "Voc\u00ea tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+        "destinations": [],
+        "secrets_allowed": false
+      },
+      "question": null,
+      "github_auth": "not-checked",
+      "question_blocks_local_care": false
+    }
+  }
+}

@@ -82,6 +82,18 @@ network permissions, owner boundaries and fixture restrictions. An unavailable
 relay is an integration failure; explain it accurately and preserve data.
 Never reroute a rejected fixture command through an unrelated channel.
 
+After verifying the relay, run the native setup-status at the start of the
+owner's maintenance request. It gives current installation, collector and
+schedule evidence. Follow its next field rather than an old setup question or
+an earlier claim that care was ready. This native check does not verify Latch
+connectivity or GitHub authentication; verify those separately when needed.
+Repair recoverable installation/collector failures using the published recipe.
+Do not describe a PAUSED or failed worker as active automatic care.
+Use the returned cloud question only when it is present, record that it was
+asked, and save the owner's answer before considering another question. A
+saved local-only choice stays local. Preference questions and optional tools
+never block already authorized local reversible work.
+
 ## Act automatically when recovery is proven
 
 Execute enabled reversible maintenance without another permission request:

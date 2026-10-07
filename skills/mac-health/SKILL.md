@@ -20,6 +20,15 @@ installed together. Linux --home fixtures cannot operate the owner's Mac.
 
 ## Native operations
 
+- setup-status checks native installation, launchd, fresh collectors, failures,
+  pause state and the saved storage preference. Run it after a harmless relay
+  diagnostic on the owner's maintenance request. READY, SETUP_NEEDED,
+  ATTENTION_NEEDED and PAUSED describe the native worker only. Follow next to
+  repair a missing installation or inspect stale/failed care; do not infer
+  readiness from old chat. relay_verified is false and github_auth is
+  not-checked: this command does not establish either connection. Ask the cloud
+  question only when question is present, record --asked once and save a new
+  answer before asking again. Local reversible care continues while waiting.
 - status reads health freshness, maintenance, pending reviews/names/approvals,
   cloud choice, backup location and project preservation results without waiting
   for a worker. doctor checks launchd and collector freshness.

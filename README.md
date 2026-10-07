@@ -15,9 +15,10 @@ the next authorized step, explains results briefly and stays quiet when there is
 nothing actionable. The personality follows the Plow base's
 [new default persona](https://github.com/plow-pbc/plow-openclaw-agent/blob/8644de7470f670086ef991787ae979ec8bb5e047/prompt/AGENTS.md),
 adapted to Mac care with concrete conversation examples. Style changes preserve
-storage choices, permissions and notification rules. This release updates the
-conversation prompt; the native maintenance worker remains v0.3.0. The upstream
-personality controls are still under review and are not included in this image.
+storage choices, permissions and notification rules. Version 0.3.2 adds native
+setup evidence and image verification using the
+[Meetly operating patterns](docs/meetly-patterns.md). Personality controls are
+not added by this integration.
 [Conversation fixtures and exact model responses](evidence/personality-v0.3.1.json)
 show the evaluated voice using fictional receipts, without external delivery.
 
@@ -94,7 +95,7 @@ Requires macOS, Python 3.11+ and Git. Authenticated `gh` enables private project
 preservation. Optional `pdftotext`, Tesseract and `ffprobe` improve local extraction.
 
 ```sh
-git clone --branch v0.3.1 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
+git clone --branch v0.3.2 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
 cd mac-guardian-agent
 python3 -m unittest discover -s tests -v
 python3 scripts/install_native.py
@@ -151,6 +152,7 @@ For direct local inspection:
 ```sh
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" status
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" doctor
+python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" setup-status
 python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" maintain --dry-run
 ```
 
@@ -166,6 +168,12 @@ existing destination. `purge-quarantine --receipt ID` prepares a deletion reques
 Only the owner's explicit consent can be recorded with `approve --id REQUEST_ID
 --evidence OWNER_WORDS`, then consumed by `purge-quarantine --receipt ID --apply
 --approval REQUEST_ID`. The conversational agent must never invent that consent.
+
+`setup-status` reads current installation, collector freshness, worker failures,
+pause and storage preference. The conversation follows its next action instead
+of repeating an earlier setup question. A native READY result does not prove
+Latch connectivity or GitHub authentication. Optional tools and an unanswered
+storage question do not block local reversible care.
 
 Mole's `mo clean --dry-run`, `mo purge --dry-run` and `mo optimize --dry-run` can
 supply additional previews. Broad cleanup may empty Trash; use specific approval
@@ -196,7 +204,22 @@ plow-agents profile --show
 ```
 
 The default build is `linux/amd64`; use `--platform linux/arm64` for local Apple
-Silicon testing. Keep the image public. An admin enables first one-click deploy
+Silicon testing. The pinned base supports both architectures. `--push` and
+`--promote` on the build script run the isolated image tests before publication.
+GitHub Actions checks Python behavior on Ubuntu and macOS and probes the built
+Intel image. Main commits and version tags publish both architectures only after
+those checks pass. The Actions run summary contains the immutable image digest;
+updating `latest` requires an explicit manual dispatch. Publishing does not
+change a running deployment or its Plow state.
+
+The development proxy binds to loopback port 3012. Set `HOST_PORT` to avoid a
+local port conflict. It grants local admin access and is installation
+infrastructure; maintenance remains conversational. The container healthcheck
+uses the gateway's `/readyz` response without loading configuration or acquiring
+the state lock. A parked container is not a ready gateway, and a ready gateway
+does not establish that the Mac is reachable.
+
+Keep the image public and verify anonymous pull. An admin enables first one-click deploy
 from the UID, slug and image digest posted by the owner in
 [Agent Index Discord](https://aiworthusing.com/discord). Later updates use
 `plow-agents image push IMAGE --promote SLUG`.
@@ -209,6 +232,8 @@ Plow removes WIP after validation. Source/image publication alone does not do so
 
 ```sh
 python3 -m unittest discover -s tests -v
+docker build --platform linux/amd64 --tag mac-guardian:check .
+python3 scripts/test_image.py mac-guardian:check --platform linux/amd64
 python3 scripts/demo_workspace.py --output private/workspace-demo
 ```
 
@@ -221,3 +246,6 @@ Image/video evidence is attached to PRs with `gh --attach`.
 `private/`, `.env`, `plow-credentials` and listing settings stay outside Git and
 Docker build contexts. Public evidence uses synthetic files. Real reports and
 secret values remain private on the Mac.
+
+[Architecture](docs/arquitetura.md), [verification and limits](docs/verificacao.md)
+and [review rules](REVIEW.md) describe the worker, runtime and release boundaries.

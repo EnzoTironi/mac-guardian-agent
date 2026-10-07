@@ -1,53 +1,60 @@
-# Verificação da versão 0.2.0
+# Verification and limits
 
-Os 52 testes locais passaram. Eles exercitam limpeza com revalidação de idade,
-conteúdo e arquivos em uso; preservação de projetos, links e worktrees; escrita
-privada; backup com Git real, clone independente e restauração antes de offload.
-Também cobrem organização física, nomes iguais, interrupção entre link e remoção,
-reversão de nomes e locais, índices que preservam páginas pessoais, exclusão de
-Documents e aliases cloud, atualizações verificadas, pausa e filas de revisão.
+The repeatable checks for version 0.3.2 are:
 
-A renomeação foi testada com títulos Markdown, metadados Office, texto de PDF,
-OCR local e títulos de mídia. Datas inválidas são ignoradas. Conteúdo com possíveis
-segredos não aparece no contexto. O hash da análise precisa continuar igual na
-execução. Arquivos sem mudanças reutilizam observações; arquivos alterados são
-analisados novamente. Uma revisão concluída não volta à fila apenas porque o
-novo nome difere de uma sugestão mecânica.
+```sh
+python3 -m unittest discover -s tests -v
+docker build --platform linux/amd64 --tag mac-guardian:check .
+python3 scripts/test_image.py mac-guardian:check --platform linux/amd64
+python3 scripts/demo_workspace.py --output private/workspace-demo
+```
 
-scripts/demo_wiki.py executou maintain e undo em um diretório temporário com
-arquivos sintéticos. Cinco arquivos foram organizados; uma nota recebeu o nome
-pelo título. Os cinco voltaram aos nomes e locais originais, com hashes iguais.
-Um projeto e um arquivo recente permaneceram no lugar. A imagem e o vídeo da
-versão 0.2 mostram essas saídas reais no navegador. O vídeo é uma gravação da
-navegação pelos resultados, sem documentos pessoais ou atualização de apps.
-Tesseract foi executado sobre a imagem e reconheceu o nome derivado do título.
+The Python safety suite uses isolated homes and actual local Git remotes. It
+checks recursive wiki organization, content naming, collision preservation,
+interrupted moves, transaction undo and protected Documents/cloud paths. It
+also checks local secret backup, sanitized private snapshots, original branch
+and index preservation, complete worktree recovery, approval expiry and content
+changes, collector failures and pause behavior.
 
-No Mac real, a wiki foi movida para ~/Wiki. Documents e as raízes cloud estão
-excluídas da política. Um ciclo da versão 0.2 organizou 100 arquivos, renomeou
-43 e verificou três atualizações de pacotes. Cada movimentação tem um journal;
-esses arquivos pessoais não aparecem nas evidências públicas. A auditoria
-completa local foi atualizada; fontes de atualização desconhecidas continuam
-pendentes e assinaturas não são um veredito antimalware.
+Readiness tests cover a fresh installation, stale collectors, missing jobs,
+a failed or paused worker, a saved local-only answer, a question already asked,
+malformed preferences and a held worker lock. A Linux fixture must not claim that
+the real Mac is ready. Optional tools and unanswered preferences never stop
+local care. A native READY result explicitly leaves relay and GitHub connection
+checks unverified.
 
-Os dois LaunchAgents executam maintain a cada 15 minutos e check --full às
-09:10. A rotina nativa continua sem Docker. Ela preserva a política e o estado
-nas reinstalações. O acompanhamento por modelo investiga as filas sem enviar
-relatórios de rotina ou pedir aprovação para cada tarefa já autorizada.
+The built-image tests use the actual compiled Plow configuration. They verify
+owner binding, untrusted groups with no guest grants, separate group sessions,
+private memory and restricted cross-conversation sends. They confirm the native
+module pair, listing identity, prompt instructions and inherited five-minute
+reporter. HTTP tests reject a live-but-unready, partially failed, parked, absent
+or malformed gateway. The fixture boot probe requires PLOW_PROBE_OK and exit 0.
 
-OpenClaw retornou health ok. O teste de experiência pela CLI, sem ferramentas
-nem entrega a contatos, respondeu em português sobre manutenção automática,
-wiki fora de Documents, nomes pelo conteúdo e interação apenas nas exceções.
-O boot Plow e o reporter oficial de cinco minutos permanecem herdados da base;
-a identidade de telemetria foi preservada na recriação do contêiner.
+`scripts/test_image.py` runs disposable containers with network disabled, no
+credentials, no persistent Plow volume and no connection to a Mac. Its JSON
+receipt distinguishes runtime contract checks from boot readiness and returns
+nonzero on failure. These checks do not prove message delivery, actual relay
+availability, full-audit completion through Latch or physical Mac operations.
 
-O teste anterior pela conversa do proprietário passou de ponta a ponta:
-iMessage, comando nativo por Latch com exit code 0 e resposta na conversa.
-A auditoria completa por essa ponte permanece sem validação: uma tentativa
-anterior excedeu a espera do handle. A auditoria local não prova essa integração.
-Restrições de fixture e permissões do Latch continuam sendo respeitadas.
+The workspace demo executes native commands against synthetic files and local
+Git remotes. It exercises wiki naming and undo, sanitized project preservation,
+local secret protection, worktree archive and restoration. Review screenshots
+and videos are evidence of those fixture outputs, not personal-file operations.
+Use `gh --attach` to add both images and video to the pull request.
 
-O workflow de GitHub Actions executa a mesma suíte em Python 3.12 no Ubuntu.
-A execução da versão 0.1 passou; o resultado do commit atual fica nos checks do
-PR. Imagens e vídeos de revisão são anexados com gh --attach. O código é MIT;
-relatórios, configurações de publicação e credenciais ficam fora do Git e Docker.
-Deploy de um clique e retirada de WIP dependem da equipe Plow.
+For a direct Mac check, inspect `setup-status` and `doctor` from the installed
+helper. A loaded schedule is not proof that all collectors succeeded. For a
+relay check, run one harmless command on the real Mac through its published
+Latch recipe, then poll any pending handle. Tool discovery alone is insufficient.
+Do not repeat an operation whose result is uncertain.
+
+For a release, wait for CI, verify the published digest's architecture manifests
+and anonymous access, and check the deployed gateway separately. Preserve its
+state volume and usage identity. A public image does not establish Plow admission
+or removal of the WIP tag. Those require the team's verification.
+
+Remaining product limits include heuristic secret detection, incomplete update
+coverage for unknown sources, no exhaustive malware verdict, no guaranteed app
+downgrade and no cloud-file transfer. Quarantine does not free space. Backups on
+the same Mac do not protect against loss of the device. Failed preservation or
+an unsupported file/worktree leaves the original in place.
