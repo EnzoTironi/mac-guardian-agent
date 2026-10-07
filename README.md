@@ -60,7 +60,10 @@ The worker waits for two hours without changes and checks open files. Source
 projects, existing vaults, configurations, system/app libraries and VM bundles
 retain their paths. `Documents`, `Library/Mobile Documents` and
 `Library/CloudStorage`, including aliases to those roots, are excluded.
-Files with insufficient context wait for further review rather than receiving
+Mounted volumes and OrbStack data retain their paths. Automatic file care stays
+on the home filesystem, where journaled hard links can guarantee recovery.
+An unexpected cross-device change preserves that source and lets other moves
+continue. Files with insufficient context wait for further review rather than receiving
 invented names. Local secret detection is heuristic, not an exhaustive guarantee.
 
 ## Recovery and permission
@@ -211,6 +214,8 @@ Intel image. Main commits and version tags publish both architectures only after
 those checks pass. The Actions run summary contains the immutable image digest;
 updating `latest` requires an explicit manual dispatch. Publishing does not
 change a running deployment or its Plow state.
+The workflow owns `ghcr.io/OWNER/mac-guardian-agent`, linked to this repository.
+The earlier `mac-guardian` package remains available for previous versions.
 
 The development proxy binds to loopback port 3012. Set `HOST_PORT` to avoid a
 local port conflict. It grants local admin access and is installation

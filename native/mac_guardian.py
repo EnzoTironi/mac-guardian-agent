@@ -6,6 +6,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import contextlib
 import datetime as dt
+import errno
 import fcntl
 import hashlib
 import json
@@ -82,7 +83,7 @@ DEFAULT_POLICY = {
 }
 PROTECTED = {".ssh", ".gnupg", ".secrets", ".config", ".codex", ".claude",
              ".openclaw", ".hermes", ".git", "Library", "Applications", "Backup",
-             "Applications (Parallels)", "Parallels", "VirtualBox VMs"}
+             "Applications (Parallels)", "Parallels", "VirtualBox VMs", "OrbStack"}
 SKIP_NAMES = {"node_modules", "target", ".git", ".venv", "venv", ".next", "dist",
               "build", "__pycache__", ".DS_Store"}
 BUNDLE_SUFFIXES = {".app", ".photoslibrary", ".photolibrary", ".musiclibrary", ".framework",
@@ -291,6 +292,12 @@ class Guardian(WorkspaceCare):
     def relative(self, path):
         return str(Path(path).relative_to(self.home))
 
+    def local_volume(self, path):
+        try:
+            return Path(path).stat().st_dev == self.home.stat().st_dev
+        except OSError:
+            return False
+
     def excluded(self, path):
         path = Path(os.path.abspath(path))
         resolved = path.resolve()
@@ -315,7 +322,7 @@ class Guardian(WorkspaceCare):
         count = 0
         while pending and count < self.policy["max_scan_directories"] and time.monotonic() < deadline:
             p = Path(os.path.abspath(pending.pop()))
-            if str(p) in visited or not p.is_relative_to(self.home) or self.excluded(p) or p.is_symlink() or not p.is_dir():
+            if str(p) in visited or not p.is_relative_to(self.home) or self.excluded(p) or p.is_symlink() or not p.is_dir() or not self.local_volume(p):
                 continue
             if not any(p.is_relative_to(Path(root)) for root in roots) or (p != self.home and p.name in PROTECTED and str(p) not in roots):
                 continue
@@ -332,7 +339,7 @@ class Guardian(WorkspaceCare):
                 continue
         valid = [Path(name) for name in sorted(seen) if Path(name).is_relative_to(self.home) and
             any(Path(name).is_relative_to(Path(root)) for root in roots) and not self.excluded(Path(name)) and
-            not Path(name).is_symlink() and any((Path(name) / marker).exists() for marker in markers)]
+            not Path(name).is_symlink() and self.local_volume(name) and any((Path(name) / marker).exists() for marker in markers)]
         recognized = set(valid)
         self._project_cache = [p for p in valid if (p / ".git").exists() or not any(parent in recognized for parent in p.parents)]
         write_json(self.state / "project-discovery.json", {"roots": roots, "pending": pending,
@@ -1142,6 +1149,8 @@ class Guardian(WorkspaceCare):
         if self.excluded(root):
             raise ValueError("A wiki precisa ficar fora de Documents e das raízes cloud excluídas")
         root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if not self.local_volume(root):
+            raise ValueError("A wiki precisa ficar no mesmo volume local da pasta pessoal")
         marker = "<!-- Mac Guardian: índice gerado automaticamente -->\n"
         def generated(path):
             if not path.is_file() or path.is_symlink():
@@ -1170,7 +1179,7 @@ class Guardian(WorkspaceCare):
         count, incomplete = 0, False
         deadline = time.monotonic() + self.policy["max_scan_seconds"]
         for category in sorted(root.iterdir()):
-            if not category.is_dir() or category.is_symlink() or category.name.startswith("."):
+            if not category.is_dir() or category.is_symlink() or category.name.startswith(".") or not self.local_volume(category):
                 continue
             rows, dirs, subject_rows, children = [], [category], {}, {}
             while dirs:
@@ -1182,7 +1191,7 @@ class Guardian(WorkspaceCare):
                         incomplete = True
                         dirs.clear()
                         break
-                    if path.is_symlink() or path.name.startswith("."):
+                    if path.is_symlink() or path.name.startswith(".") or not self.local_volume(path):
                         continue
                     if path.is_dir():
                         dirs.append(path)
@@ -1264,20 +1273,20 @@ class Guardian(WorkspaceCare):
         deadline = time.monotonic() + self.policy["max_scan_seconds"]
         for folder in self.policy["organization_roots"]:
             root = self.home / folder
-            if not root.is_dir() or root.is_symlink() or self.excluded(root):
+            if not root.is_dir() or root.is_symlink() or self.excluded(root) or not self.local_volume(root):
                 continue
             for base, dirs, files in os.walk(root, followlinks=False):
                 base = Path(base)
                 scanned += 1
                 if scanned > self.policy["max_scan_directories"] or time.monotonic() > deadline or len(moves) >= self.policy["organization_max_files_per_run"]:
                     break
-                if self.excluded(base) or any(base == p or base.is_relative_to(p) for p in protected) or any(
+                if self.excluded(base) or not self.local_volume(base) or any(base == p or base.is_relative_to(p) for p in protected) or any(
                         (base / name).exists() for name in (".git", ".obsidian", "wiki.toml", "package.json", "Cargo.toml", "CMakeLists.txt", "pyproject.toml", "requirements.txt", "go.mod", "Package.swift")):
                     dirs[:] = []
                     continue
                 dirs[:] = sorted(name for name in dirs if not name.startswith(".")
                     and name not in PROTECTED | SKIP_NAMES and not (base / name).is_symlink()
-                    and Path(name).suffix.lower() not in BUNDLE_SUFFIXES)
+                    and Path(name).suffix.lower() not in BUNDLE_SUFFIXES and self.local_volume(base / name))
                 for filename in sorted(files):
                     p = base / filename
                     category = categories.get(p.suffix.lower())
@@ -1289,7 +1298,7 @@ class Guardian(WorkspaceCare):
                     seen.add(p)
                     try:
                         s = p.stat()
-                        if s.st_mtime > cutoff or s.st_size > self.policy["organization_max_file_mib"] * 1024 ** 2 or s.st_nlink != 1:
+                        if s.st_dev != self.home.stat().st_dev or s.st_mtime > cutoff or s.st_size > self.policy["organization_max_file_mib"] * 1024 ** 2 or s.st_nlink != 1:
                             continue
                         group = base.relative_to(root)
                         # Preserve existing subject folders; loose files use their year.
@@ -1336,6 +1345,8 @@ class Guardian(WorkspaceCare):
                     continue
                 dest.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
                 s = source.stat()
+                if s.st_dev != dest.parent.stat().st_dev:
+                    continue
                 if dest.exists() or dest.is_symlink() or digest(source) != m["sha256"] or any(
                         val != m[key] for key, val in [("device", s.st_dev), ("inode", s.st_ino),
                                                      ("mtime_ns", s.st_mtime_ns), ("ctime_ns", s.st_ctime_ns), ("bytes", s.st_size)]):
@@ -1343,7 +1354,14 @@ class Guardian(WorkspaceCare):
                 done.append(m)
                 write_json(journal, {"items": done})
                 # Journal first; a hard link publishes without overwriting.
-                os.link(source, dest, follow_symlinks=False)
+                try:
+                    os.link(source, dest, follow_symlinks=False)
+                except OSError as error:
+                    if error.errno != errno.EXDEV:
+                        raise
+                    done.pop()
+                    write_json(journal, {"items": done})
+                    continue
                 source.unlink()
                 self.record("move", m | {"transaction": txn})
             wiki = self.file_wiki()
@@ -1501,7 +1519,7 @@ class Guardian(WorkspaceCare):
     def classify_file(self, path, category, topic, name, expected_hash, evidence):
         path = safe_inside(Path(path).expanduser(), self.home)
         vault = safe_inside(self.home / self.policy["file_wiki_root"], self.home)
-        if self.excluded(path) or not evidence.strip() or SECRET_NAME.search(path.name) or path.suffix.lower() not in {
+        if self.excluded(path) or not self.local_volume(path) or not evidence.strip() or SECRET_NAME.search(path.name) or path.suffix.lower() not in {
                 ".pdf", ".docx", ".txt", ".md", ".xlsx", ".csv", ".pptx", ".png", ".jpg", ".jpeg",
                 ".webp", ".mp4", ".mov", ".mp3", ".wav", ".m4a", ".fig", ".sketch", ".zip", ".dmg"}:
             raise ValueError("Classificação exige evidência e uma origem pessoal permitida")
@@ -1547,7 +1565,11 @@ class Guardian(WorkspaceCare):
         deadline = time.monotonic() + self.policy["max_scan_seconds"]
         if vault.exists():
             for base, dirs, files in os.walk(vault, followlinks=False):
-                dirs[:] = [n for n in dirs if not n.startswith(".") and not (Path(base) / n).is_symlink()]
+                if not self.local_volume(base):
+                    dirs[:] = []
+                    continue
+                dirs[:] = [n for n in dirs if not n.startswith(".") and not (Path(base) / n).is_symlink()
+                           and self.local_volume(Path(base) / n)]
                 if any((Path(base) / n).exists() for n in (".git", ".obsidian", "wiki.toml", "package.json", "Cargo.toml", "pyproject.toml", "go.mod")):
                     dirs[:] = []
                     continue
@@ -1555,7 +1577,7 @@ class Guardian(WorkspaceCare):
                     if time.monotonic() > deadline or len(moves) >= self.policy["organization_max_files_per_run"]:
                         break
                     path = Path(base) / name
-                    if path.is_symlink() or name.startswith((".", "_")) or name == "Home.md" or name.upper() in {
+                    if path.is_symlink() or not self.local_volume(path) or name.startswith((".", "_")) or name == "Home.md" or name.upper() in {
                             "AGENTS.MD", "CLAUDE.MD", "SOUL.MD", "USER.MD", "TOOLS.MD", "HEARTBEAT.MD"} or SECRET_NAME.search(name):
                         continue
                     s = path.stat()
