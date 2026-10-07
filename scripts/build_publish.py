@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("image")
@@ -24,6 +25,8 @@ for key, val in [("AGENT_ID", listing["slug"]), ("AGENT_NAME", listing["name"]),
     command += ["--build-arg", f"{key}={val}"]
 subprocess.run(command + ["."], cwd=root, check=True)
 if args.push or args.promote:
+    subprocess.run([sys.executable, str(root / "scripts/test_image.py"), args.image,
+                    "--platform", args.platform], cwd=root, check=True)
     command = ["plow-agents", "image", "push", args.image]
     if args.promote:
         command += ["--promote", listing["slug"]]

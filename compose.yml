@@ -4,18 +4,18 @@ services:
     build:
       context: .
       args:
-        AGENT_ID: ${AGENT_ID:-}
+        AGENT_ID: ${AGENT_ID:-mac-guardian}
         AGENT_NAME: ${AGENT_NAME:-Mac Guardian}
-        AGENT_BLURB: ${AGENT_BLURB:-Manutenção do Mac com wiki e backups verificáveis.}
+        AGENT_BLURB: ${AGENT_BLURB:-Quiet Mac care with organized files and verified backups.}
     env_file:
       - path: ./plow-credentials
         required: true
     environment:
-      AGENT_ID: ${AGENT_ID:-}
+      AGENT_ID: ${AGENT_ID:-mac-guardian}
       AGENT_NAME: ${AGENT_NAME:-Mac Guardian}
-      AGENT_BLURB: ${AGENT_BLURB:-Manutenção do Mac com wiki e backups verificáveis.}
+      AGENT_BLURB: ${AGENT_BLURB:-Quiet Mac care with organized files and verified backups.}
     ports:
-      - "127.0.0.1:3012:3001"
+      - "127.0.0.1:${HOST_PORT:-3012}:3001"
     volumes:
       - state:/var/lib/plow
     restart: unless-stopped
