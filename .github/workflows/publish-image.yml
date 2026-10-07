@@ -33,7 +33,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
-          images: ghcr.io/${{ github.repository_owner }}/mac-guardian
+          images: ghcr.io/${{ github.repository_owner }}/mac-guardian-agent
           flavor: latest=false
           tags: |
             type=sha
@@ -54,7 +54,7 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          ref="ghcr.io/${OWNER,,}/mac-guardian@${DIGEST}"
+          ref="ghcr.io/${OWNER,,}/mac-guardian-agent@${DIGEST}"
           {
             echo "Published immutable image: \`${ref}\`"
             echo
