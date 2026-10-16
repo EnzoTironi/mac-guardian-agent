@@ -175,7 +175,7 @@ class TimeMachineTests(unittest.TestCase):
             return self.g.time_machine()
 
     def test_states(self):
-        self.assertEqual(self.status({"tmutil destinationinfo": ok("No destinations configured.\n")}),
+        self.assertEqual(self.status({"tmutil destinationinfo": ok("tmutil: No destinations configured.\n")}),
                          {"status": "not_configured"})
         recent = (dt.datetime.now() - dt.timedelta(days=12)).strftime("%Y-%m-%d-%H%M%S")
         configured = ok("====================================================\nName          : Backup Drive\nKind          : Local\n")
