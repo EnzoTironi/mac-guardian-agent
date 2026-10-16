@@ -1,10 +1,11 @@
 # Verification and limits
 
-The repeatable checks for version 0.3.2 are:
+The repeatable checks for version 0.4.0 are:
 
 ```sh
 python3 -m unittest discover -s tests -v
-docker build --platform linux/amd64 --tag mac-guardian:check .
+node --test tests/runtime/*.test.mjs
+docker build --platform linux/amd64 --build-arg MAC_GUARDIAN_REVISION=$(git rev-parse HEAD) --tag mac-guardian:check .
 python3 scripts/test_image.py mac-guardian:check --platform linux/amd64
 python3 scripts/demo_workspace.py --output private/workspace-demo
 ```
@@ -15,6 +16,25 @@ interrupted moves, transaction undo and protected Documents/cloud paths. It
 also checks local secret backup, sanitized private snapshots, original branch
 and index preservation, complete worktree recovery, approval expiry and content
 changes, collector failures and pause behavior.
+
+Consent tests check that background care previews without moving files, that
+every file-moving command refuses without consent, that a grant needs a fresh
+preview of the same folders, that revoking stops later moves, that changing
+folders needs a new yes, and that without github-projects consent no GitHub
+command runs and no repository is created while secrets are still backed up
+locally. They also cover app media libraries, sync folders, cloud placeholders,
+English wiki names with legacy Portuguese wikis kept, and grandfathered installs.
+
+Install tests run the exact bootstrap text the agent passes to Latch, with a
+stand-in curl and installer so this machine's launchd is never touched: matching
+files install with the probing Python, a changed or missing file installs
+nothing, and unexpected sources and unsafe paths are refused. The generator
+tests check that the printed hashes equal the repository files and that an
+image built without its commit refuses to print an install.
+
+Prompt contract tests compare `prompt/AGENTS.md` with the base prompt at the
+pinned commit (`tests/fixtures/base-AGENTS.md`), and check that every command
+and flag the skill names exists in the helper and that no personal data is tracked.
 
 Readiness tests cover a fresh installation, stale collectors, missing jobs,
 a failed or paused worker, a saved local-only answer, a question already asked,
@@ -27,7 +47,8 @@ The built-image tests use the actual compiled Plow configuration. They verify
 owner binding, untrusted groups with no guest grants, separate group sessions,
 private memory and restricted cross-conversation sends. They confirm the native
 module pair, listing identity, prompt instructions and inherited five-minute
-reporter. HTTP tests reject a live-but-unready, partially failed, parked, absent
+reporter, and that the install command pins this image's own native files.
+In a checkout these image tests are skipped, not passed. HTTP tests reject a live-but-unready, partially failed, parked, absent
 or malformed gateway. The fixture boot probe requires PLOW_PROBE_OK and exit 0.
 
 `scripts/test_image.py` runs disposable containers with network disabled, no

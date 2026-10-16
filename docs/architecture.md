@@ -6,6 +6,14 @@ five-minute usage reporter. Latch executes permitted commands on the real Mac.
 The Python worker owns deterministic checks, receipts, scope and recovery.
 Neither Linux fixtures nor tool discovery establish access to the owner's Mac.
 
+The helper reaches the Mac without a terminal. `skills/mac-health/scripts/install-command.mjs`
+runs in the container and prints the exact `plow_run_command` arguments: a probe
+for a Python 3.11+ interpreter, then an install that downloads the helper,
+`workspace_care.py` and `install_native.py` from GitHub at the commit the image
+was built from (`MAC_GUARDIAN_REVISION`). The generator hashes the copies inside
+the image; the Mac installs nothing unless every download matches. The owner
+approves the command in Latch. Reinstalling keeps policy, consent, wiki and backups.
+
 The native worker runs `maintain` every 15 minutes and `check --full` at 09:10
 local time through user LaunchAgents. It does not run while the Mac is powered
 off or the user is logged out. It continues without Docker and does not call a
@@ -21,16 +29,27 @@ the maintenance lock is held.
 
 `maintain` collects health, quarantines eligible caches, organizes stable
 personal files, derives names, preserves projects and performs due audits and
-approval-gated updates. It records each stage and verifies the result. A lock
+approval-gated updates. Two scopes wait for the owner's one-time consent
+(`consent.json`, granted only after a preview from the last hour): moving
+personal files, and sending project code to private GitHub. Until then the
+organization stage previews without moving, and project care keeps local secret
+backups only, creating no repository. Installs that already moved files or saved
+snapshots before 0.4.0 are recorded as grandfathered. Changing the organized
+folders invalidates the organization consent. It records each stage and verifies the result. A lock
 prevents concurrent writers; bounded project and ref cursors continue on later
 cycles. Pause suspends mutations while monitoring continues.
 
 Personal files live in `~/Wiki/CATEGORY/SUBJECT`, with folder indexes, Home.md
-and Projects.md. Source projects retain their paths and appear as links. Pages
-written by the user are preserved. Health reports remain separate under
-`~/Library/Application Support/MacGuardian/reports`. Documents, Mobile Documents
-and CloudStorage stay excluded, including aliases. Application internals,
-configurations, VM bundles, existing vaults and project trees retain their paths.
+and Projects.md. New installs organize Downloads and Desktop; the whole home
+folder is an explicit choice (`configure-organization --root .`). New wikis use
+English folder names; a wiki created by an earlier version keeps its Portuguese
+ones. Source projects retain their paths and appear as links. Pages written by
+the user are preserved. Health reports remain separate under
+`~/Library/Application Support/MacGuardian/reports`. Documents, Mobile Documents,
+CloudStorage and top-level sync folders (Dropbox, OneDrive, Box...) stay
+excluded, including aliases. Application internals, app media libraries (Music,
+TV, Photo Booth, iMovie and similar packages), configurations, VM bundles,
+existing vaults, project trees and cloud placeholders retain their paths.
 
 Naming uses bounded local text, Office titles, PDF text, OCR and media tags.
 Confident evidence supplies the name and subject; ambiguous cases enter a
@@ -47,8 +66,8 @@ Homebrew and App Store upgrades currently need the same explicit consent because
 full downgrade is not guaranteed. Scope, age, source, idle and dependency checks
 still apply after consent. No force, sudo, reboot or license acceptance is inferred.
 
-The separately authorized GitHub project routine uses a private companion
-repository. Each working tree and unpublished branch tip becomes a sanitized
+The GitHub project routine runs only with the owner's github-projects consent
+and uses a private companion repository. Each working tree and unpublished branch tip becomes a sanitized
 snapshot branch without original parent history. It preserves allowed files,
 then verifies all blobs from a fresh remote clone. The user's branch, index and
 files stay unchanged. Ignored artifacts and detected secrets remain local.
