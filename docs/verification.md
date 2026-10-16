@@ -25,6 +25,16 @@ command runs and no repository is created while secrets are still backed up
 locally. They also cover app media libraries, sync folders, cloud placeholders,
 English wiki names with legacy Portuguese wikis kept, and grandfathered installs.
 
+Attention tests check that `space` lists only rebuildable folders (never
+documents or symlinked caches), that nothing is deleted without a recorded yes,
+that a yes empties the measured folders but keeps them, is used once and skips
+anything replaced or in use, that a day-old proposal is refused, that earlier
+quarantine is offered and purged with its receipt, that the Trash is a separate
+question and an unreadable Trash is unknown, and that `maintain` no longer
+quarantines even with an old `auto_cleanup: true` policy. Time Machine parsing is
+tested against recorded `tmutil` outputs; the digest tests cover a healthy Mac,
+low disk with a proposal, quiet repeats, escalation, dry runs and priority.
+
 Install tests run the exact bootstrap text the agent passes to Latch, with a
 stand-in curl and installer so this machine's launchd is never touched: matching
 files install with the probing Python, a changed or missing file installs

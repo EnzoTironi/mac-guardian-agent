@@ -30,6 +30,7 @@ from xml.parsers.expat import ExpatError
 if str(Path(__file__).parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).parent))
 from workspace_care import WorkspaceCare
+from attention import Attention
 
 GIB = 1024 ** 3
 DAY = 86400
@@ -46,7 +47,9 @@ DEFAULT_POLICY = {
     "audit_stale_hours": 36,
     "history_days": 30,
     "history_max_samples": 2880,
-    "auto_cleanup": True,
+    # Ignored since 0.4.0: caches moved to quarantine freed nothing and apps rebuilt
+    # them beside it. Space is freed only through `space` and the owner's yes.
+    "auto_cleanup": False,
     "auto_organize": True,
     "auto_name": True,
     "auto_updates": True,
@@ -291,7 +294,7 @@ def signature(path, verify=False):
     return result
 
 
-class Guardian(WorkspaceCare):
+class Guardian(Attention, WorkspaceCare):
     cloud_exclusions = tuple(DEFAULT_POLICY["excluded_roots"])
     secret_name = SECRET_NAME
     secret_content = SECRET_CONTENT
@@ -578,7 +581,7 @@ class Guardian(WorkspaceCare):
             raise ValueError("File or directory is recent")
         return data
 
-    def cleanup_plan(self):
+    def cleanup_plan(self, record=True):
         candidates, skipped = [], []
         possible = []
         for rel in self.policy["cache_paths"]:
@@ -601,7 +604,8 @@ class Guardian(WorkspaceCare):
         plan = {"created_at": now(), "items": candidates, "skipped": skipped,
                 "reclaimable_bytes": sum(p["bytes"] for p in candidates),
                 "scope": "Only disposable files; managed worktrees require Codex archive."}
-        write_json(self.state / "cleanup-plan.json", plan)
+        if record:
+            write_json(self.state / "cleanup-plan.json", plan)
         return plan
 
     def clean(self, apply=False):
@@ -1010,22 +1014,13 @@ class Guardian(WorkspaceCare):
         def due(name):
             age = age_seconds(state.get("last_" + name + "_at"))
             return age is None or age > self.policy["maintenance_every_hours"] * 3600
-        if self.policy["auto_cleanup"] and (due("cleanup") or
-                report["disk"]["free_bytes"] < self.policy["target_free_disk_gib"] * GIB or not apply):
-            def cleanup():
-                plan = self.cleanup_plan()
-                return self.clean(True) if apply else plan
-            if stage("cleanup", cleanup) and apply:
-                state["last_cleanup_at"] = now()
+        # Nothing is deleted or quarantined on a schedule: `space` proposes, the owner decides.
         # Moving the owner's files starts only after they saw a preview and said yes.
-        organize_allowed = not apply or self.consent_granted("organize")
+        organize_allowed = self.consent_granted("organize")
         org_age = age_seconds(state.get("last_organization_at"))
-        if self.policy["auto_organize"] and (org_age is None or
+        if self.policy["auto_organize"] and organize_allowed and (org_age is None or
                 org_age > self.policy["organization_every_minutes"] * 60 or not apply):
-            if not organize_allowed:
-                stage("organization", lambda: {"awaiting_consent": True,
-                                               "summary": self.organize(False, record=False)["summary"]})
-            elif stage("organization", lambda: self.organize(apply)) and apply:
+            if stage("organization", lambda: self.organize(apply)) and apply:
                 state["last_organization_at"] = now()
         if self.policy["auto_name"] and organize_allowed and time.monotonic() < deadline - 60:
             stage("naming", lambda: self.rename(apply))
@@ -1090,6 +1085,7 @@ class Guardian(WorkspaceCare):
                 "cloud": self.cloud_status(),
                 "consent": self.consent_status(),
                 "organization_roots": list(self.policy["organization_roots"]),
+                "time_machine": report.get("time_machine", {"status": "unknown"}),
                 "backup_folder": str(self.home / self.policy["local_backup_root"]),
                 "projects": read_json(self.state / "projects.json", {}),
                 "pending_approvals": [p for p in read_json(self.state / "approvals.json", [])
@@ -1213,7 +1209,7 @@ class Guardian(WorkspaceCare):
                                                       ("swap", swap_result), ("vm", vm), ("processes", ps),
                                                       ("battery", battery)]},
                   "alerts": alerts, "folders": self.folders()}
-        for key in ("applications", "updates", "security", "full_checked_at"):
+        for key in ("applications", "updates", "security", "time_machine", "full_checked_at"):
             if key in previous:
                 report[key] = previous[key]
         if full:
@@ -1231,6 +1227,7 @@ class Guardian(WorkspaceCare):
                                                 "current" if report["updates"]["brew_refresh"]["ok"] and
                                                 "casks" in outdated else "unknown")
                         app["update_source"] = "Homebrew"
+            report["time_machine"] = self.time_machine()
             report["security"] = {
                 "sip": command(["csrutil", "status"]),
                 "gatekeeper": command(["spctl", "--status"]),
@@ -1997,7 +1994,14 @@ def build_parser():
     review = sub.add_parser("review")
     review.add_argument("--id", required=True)
     review.add_argument("--evidence", required=True)
-    sub.add_parser("plan")
+    sub.add_parser("plan", help="Legacy: plan moving caches to quarantine; prefer space")
+    sub.add_parser("space", help="Measure what can be freed and prepare one approval for it")
+    free = sub.add_parser("free-space", help="Delete the measured items after the owner's yes")
+    free.add_argument("--approval", required=True)
+    trash = sub.add_parser("empty-trash", help="Empty the Trash after the owner's yes")
+    trash.add_argument("--approval", required=True)
+    digest = sub.add_parser("digest", help="At most one thing worth a text now")
+    digest.add_argument("--dry-run", action="store_true", help="Do not record it as sent")
     sub.add_parser("worktrees")
     sub.add_parser("cloud-status")
     cloud = sub.add_parser("configure-cloud")
@@ -2101,6 +2105,14 @@ def main():
                 result = g.review(args.id, args.evidence)
             elif args.action == "plan":
                 result = g.cleanup_plan()
+            elif args.action == "space":
+                result = g.space()
+            elif args.action == "free-space":
+                result = g.free_space(args.approval)
+            elif args.action == "empty-trash":
+                result = g.empty_trash(args.approval)
+            elif args.action == "digest":
+                result = g.digest(args.dry_run)
             elif args.action == "worktrees":
                 result = g.worktrees()
             elif args.action == "cloud-status":

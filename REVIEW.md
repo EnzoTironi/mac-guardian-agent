@@ -16,6 +16,11 @@ change that weakens a safety gate is blocking even when it looks like polish.
   `project_snapshot` or `private_project_repo` without `require_consent`, a
   background run that writes a consent preview, or a prompt or skill line that
   lets the model grant consent without the owner's yes.
+- **Nothing is deleted, quarantined or moved on a schedule.** `space` only
+  measures and proposes; `free-space` and `empty-trash` run only with an
+  approval for the exact inventory. Block a stage in `maintain` that deletes or
+  quarantines, a target in `REBUILDABLE` that holds user documents, or a digest
+  that texts the same item every day.
 - **Irreversible means a yes every time.** Purge, Trash, backup deletion,
   updates and installers go through `request_approval`/`consume_approval`:
   exact content, one hour, single use. Quarantine frees zero bytes and must

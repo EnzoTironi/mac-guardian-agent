@@ -18,16 +18,19 @@ either one-click deploy or an https install URL.
 
 | Title | Detail |
 |---|---|
-| Automatic care | Health checks and restorable cleanup. Anything irreversible needs your yes. |
-| A wiki of your files | After one yes, sorts Downloads and Desktop by content, with undo. |
-| Private code backups | With your OK, verified private GitHub branches. Secrets stay local. |
+| Texts before the disk fills | One daily check. Silent unless something needs you. |
+| Frees space with one yes | Rebuildable caches and build folders only. Never your files. |
+| Watches your backups | Tells you when Time Machine stops. Code to private GitHub on OK. |
 | Installs by text | Latch installs a helper checked against the image. No terminal. |
+
+Suggested blurb update (optional): "Texts you before your Mac's disk fills, frees
+space with one yes, and tells you when backups stop."
 
 ## Tools
 
 | Tool | Description |
 |---|---|
-| Plow Chat | Text it for status, previews and approvals. Routine success stays quiet. |
+| Plow Chat | Text it; it texts you once a day at most, with one question. |
 | Plow Latch | Installs and runs the native helper on your Mac with declared paths; you approve. |
 
 ## Draft stories
@@ -37,32 +40,29 @@ what it did not do. These are drafts with **placeholders in brackets**. Publish
 one only after it happened on a real Mac (see `checks/manual-scenarios.md`),
 with the real numbers. Suggested tags reuse existing ones from `GET /v1/tags`.
 
-### It showed me the move before it moved anything
+### One yes gave me [X] GB back
 
 *Tags: Setup & first run, approval*
 
-I asked it to clean up my Downloads. It didn't touch a file. It told me [N]
-files would move from Downloads and Desktop into a Wiki folder, sorted by type
-and subject, and asked if that was OK. I said yes. [N] files moved, renamed from
-what was inside them. A week later I said "undo that" for one folder and every
-file was back where it had been, byte for byte.
+I installed it from a text and approved one Latch prompt. In the same
+conversation it told me I had [N] GB free and that [X] GB was Xcode build data
+and package caches that rebuild themselves. It asked once. I said yes. [X] GB
+came back, my Documents untouched, and it said which folder it skipped because
+Xcode was open.
 
-### It would not call quarantined space free space
+### It texted me before the disk filled
 
-*Tags: approval, automation*
+*Tags: automation, approval*
 
-My disk was nearly full and I asked it to fix that. It had already moved
-[X GB] of old caches into a quarantine, and it said so: those bytes were still
-on the disk so they could be restored. Deleting them for good needed my OK, and
-it showed exactly what would go. I said yes. The next time I asked for the same
-thing an hour later, it asked again.
+I had not thought about disk space in months. One morning, one text: the disk
+was [N]% full, here is what can go, free it? It had said nothing on the days
+before, and it did not repeat itself the day after.
 
-### My code was saved and my .env stayed home
+### It noticed my backups had stopped
 
-*Tags: Engineering, approval*
+*Tags: automation*
 
-It asked once whether it could save my unpushed work to a private GitHub
-repository, named the repository, and said secrets and ignored files would
-stay on the Mac. I said yes. [N] projects got a private branch each, checked
-from a fresh clone. My branches and staged changes did not move, and my `.env`
-files sit in a local backup only I can read.
+My backup drive had been in a drawer for [N] days. Mac Guardian told me Time
+Machine had not run since [date] and to plug the drive in. That was the whole
+message. It did not try to fix it for me, and it did not pretend the local
+copies it keeps are a backup.

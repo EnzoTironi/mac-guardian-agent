@@ -2,11 +2,10 @@
 
 ![Your Mac has a doctor now](media/campaign-v1/images/01-your-mac-has-a-doctor.png)
 
-Mac Guardian looks after your Mac and talks with you about it by text. It
-watches storage, memory, apps and updates, clears old caches into a restorable
-quarantine, organizes your loose files into a wiki on your own Mac (with undo),
-keeps local copies of your secrets, and, if you say yes, saves your project code
-to a private GitHub repository. Anything that cannot be undone waits for your OK.
+Mac Guardian texts you before your disk fills, frees space with one yes, tells
+you when your backups stop, and keeps your project code backed up. It runs a
+small helper on your Mac through Plow Latch and talks to you over text. It never
+deletes anything without your OK, and it is quiet when there is nothing to say.
 
 [English campaign and 40-second film](media/campaign-v1/README.md) ·
 [Agent Index page](https://aiworthusing.com/agent-index/mac-guardian)
@@ -20,56 +19,65 @@ A first conversation, with fictional numbers:
 >
 > *(you tap Allow in Latch)*
 >
-> **Mac Guardian:** Done. You have 24 GB free and nothing needs you right now. I
-> can move 37 files from Downloads and Desktop into a Wiki folder, sorted by
-> type and subject and named from their contents. Every move can be undone.
-> Go ahead?
+> **Mac Guardian:** You have 38 GB free of 500 GB. I can free 14 GB of Xcode
+> build data and npm cache; they rebuild themselves. Time Machine last backed
+> up yesterday. Free the 14 GB?
 >
 > **You:** yes
 >
-> **Mac Guardian:** Done: 37 files are in ~/Wiki. Say undo and they go back.
+> **Mac Guardian:** Freed 14.2 GB. You have 52 GB free now.
 
-After that it stays quiet, and writes again only for critical storage, a
-confirmed risk or a decision that is yours.
+Then, once a day, it checks. Most days it says nothing. When something needs
+you, it sends one text with one question:
+
+> **Mac Guardian:** Your disk is 92% full (40 GB left). I can free 11 GB of
+> Homebrew downloads and build folders from projects you haven't touched in a
+> month. Free it?
+
+> **Mac Guardian:** Time Machine hasn't backed up in 12 days. Plug in the backup
+> drive and it will catch up.
 
 ## What it does, what it asks first, what it never does
 
-**On its own, once installed** (every action has a receipt or an undo):
+**On its own, once installed** (every action has a receipt):
 
 - Health every 15 minutes (disk, memory, swap, load, processes, battery, with
   30 days of history) and a full audit daily at 09:10: apps, signatures,
-  update sources, background services and listeners.
-- Old caches and build output move into `~/Backup/MacGuardian/Quarantine` on the
-  same disk. That is restorable and frees **zero bytes** until you approve deletion.
+  update sources, Time Machine, background services and listeners.
+- One daily check that texts you only for low disk (with a ready proposal), a
+  stale or missing Time Machine backup, a failed routine or waiting updates.
+  The same thing is not repeated for days unless it gets worse.
 - Secret files from your projects (`.env`, credentials, private keys, detected
   secret-bearing files) are copied into `~/Backup/MacGuardian/Secrets`:
   owner-only, versioned by hash, never uploaded.
-- Changed background services are investigated and logged; observed is not trusted.
 
-**After one yes from you**, then automatically:
+**Your yes every time**, for an exact list:
 
-- **Organizing files.** It shows how many files would move from which folders,
-  then moves stable files into `~/Wiki/CATEGORY/SUBJECT` with an index page in
-  every folder, and names them from their content (titles, clients, dates
-  written in the document). New installs organize **Downloads and Desktop**. The
-  whole home folder, or another folder, is your choice, and changing the
-  folders needs a new preview and yes.
+- **Freeing space.** Only folders their tools rebuild: Xcode build data and
+  Simulator caches, Homebrew, npm, pip, uv, Yarn, Go, Gradle, Cargo and
+  CocoaPods caches, and `node_modules`/`target` of committed projects idle for
+  30 days. Anything in use is skipped. One yes frees the whole list. Your
+  documents are never on it.
+- **Emptying the Trash**, as its own question. Also deleting backups, app and
+  package updates (no guaranteed downgrade), installers, and security or
+  service changes. An approval matches that exact list, expires after an hour
+  and is used once.
+
+**One yes, then automatically:**
+
 - **Private GitHub snapshots of project code.** Working changes, untracked code
   and unpublished branch tips go to private branches in
   `YOUR-LOGIN/mac-guardian-project-backups`, verified from a fresh clone. Your
   branch, index and files are never changed. Without this yes, no repository is
   created and no code leaves the Mac.
+- **Organizing files, only if you ask.** It shows how many files would move
+  from Downloads and Desktop into `~/Wiki/CATEGORY/SUBJECT`, named from their
+  content, and every move can be undone. It never offers this on its own.
 
-**Your yes every time**, for the exact preview: deleting quarantine, emptying
-Trash, deleting backups, app and package updates (no guaranteed downgrade),
-installers, and security or service changes. An approval matches that exact
-content, expires after an hour and is used once.
-
-**Never:** moving files from Documents, iCloud Drive, CloudStorage or sync
-folders such as Dropbox and OneDrive; touching app media libraries (Music, TV,
-Photo Booth, iMovie and similar), projects, vaults, VM bundles or system and
-app internals; downloading cloud placeholders just to move them; uploading
-secrets anywhere; forcing sudo, killing apps, accepting licenses or rebooting.
+**Never:** deleting or moving anything on a schedule; touching Documents,
+iCloud Drive, CloudStorage, sync folders such as Dropbox and OneDrive, app media
+libraries, projects, vaults or system and app internals; uploading secrets
+anywhere; forcing sudo, killing apps, accepting licenses or rebooting.
 
 ## Install
 
@@ -82,8 +90,9 @@ Python 3.11 or newer there (Homebrew's `python3` or the
    for this image; until then, run it yourself as below.
 2. Text it. On your first Mac request it checks your Mac through Latch and
    installs its helper. You approve that once in Latch; you never open a terminal.
-3. It asks one question about Google Drive or iCloud for ordinary files, and
-   shows the organization preview. Local care starts right away either way.
+3. In that same conversation you get your free space, what can be freed and
+   whether Time Machine is running, with at most one question. It then sets up
+   its daily check in your chat.
 
 To stop it: ask it to stop its background jobs (the uninstall keeps your wiki,
 reports and backups), or remove the agent's line in Plow.
@@ -140,8 +149,9 @@ its five-minute usage reporter, which free hosting requires.
 
 Two parts: a conversation container on Plow's OpenClaw base (identity,
 transport, usage reporting inherited) and a native Python helper on the Mac,
-run every 15 minutes by launchd, that keeps working while the container is
-stopped. Latch carries each command, with declared paths and network, and the
+run every 15 minutes by launchd, that keeps measuring while the container is
+stopped. A daily Plow automation asks the helper for its digest and turns the
+one item worth saying, if any, into a text. Latch carries each command, with declared paths and network, and the
 owner approves on the Mac. Deterministic work (checks, receipts, consent,
 approvals, hashes, recovery) lives in the helper; the model reads ambiguous
 content and talks.
@@ -152,9 +162,9 @@ content and talks.
 - [Review rules](REVIEW.md) and [Meetly patterns](docs/meetly-patterns.md).
 - [Manual end-to-end checks](checks/manual-scenarios.md) on a real Mac.
 
-Things to say: "How is my Mac?", "What used space today?", "Organize my files",
-"Undo the last organization", "Pause for two hours", "Resume", "Back up my
-code", "Restore that worktree", "Stop your background jobs".
+Things to say: "How is my Mac?", "Free some space", "Empty the Trash", "Is my
+backup working?", "Back up my code", "Organize my files", "Undo that", "Pause for
+two hours", "Resume", "Stop your background jobs".
 
 ## Known limitations
 
@@ -164,11 +174,16 @@ code", "Restore that worktree", "Stop your background jobs".
   install has not been verified on a real Mac in this release.
 - Secret detection is heuristic (names and common key formats), not a guarantee.
   Private GitHub is not encryption.
-- Quarantine frees no space until a deletion is approved. Local backups do not
-  protect against losing the Mac.
-- Moving files out of an iCloud-synced Desktop stops them syncing; placeholders
-  are skipped, but downloaded files on that Desktop are moved like any other.
-- No cloud-file transfer yet: a Drive or iCloud answer is recorded for later.
+- The daily check runs as a Plow automation in your chat; if the Mac or Latch is
+  asleep at that time, that day's check is skipped. Low disk is caught at the
+  next check, not the moment it happens.
+- The Time Machine check reads `tmutil`; without Full Disk Access the date of the
+  last backup can be unknown, and then it says nothing rather than guess. The
+  Trash size has the same limit.
+- Local secret backups do not protect against losing the Mac; Time Machine does.
+- If you ask for file organization on an iCloud-synced Desktop, moved files stop
+  syncing; placeholders are skipped, downloaded files are moved like any other.
+- No cloud-file transfer: Mac Guardian does not move files to Drive or iCloud.
 - Update coverage is incomplete for unknown sources; signatures and Gatekeeper
   do not prove the absence of malware; app updates have no guaranteed downgrade.
 

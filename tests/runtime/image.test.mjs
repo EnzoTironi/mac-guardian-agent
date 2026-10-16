@@ -25,7 +25,7 @@ test("the actual compiled base isolates the owner's Mac and grants no guest tool
 
 test("the image has its listing identity, complete native worker and official reporter", { skip }, () => {
   assert.match(process.env.AGENT_ID, /^[a-z0-9][a-z0-9-]{1,63}$/);
-  assert.deepEqual(readdirSync("/opt/mac-guardian").sort(), ["install_native.py", "mac_guardian.py", "runtime", "workspace_care.py"]);
+  assert.deepEqual(readdirSync("/opt/mac-guardian").sort(), ["attention.py", "install_native.py", "mac_guardian.py", "runtime", "workspace_care.py"]);
   const home = mkdtempSync(join(tmpdir(), "guardian-native-fixture-"));
   try {
     const result = JSON.parse(execFileSync("python3", ["/opt/mac-guardian/mac_guardian.py", "--home", home, "setup-status"], { encoding: "utf8", timeout: 20_000 }));

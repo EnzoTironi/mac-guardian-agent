@@ -27,9 +27,25 @@ Latch connectivity nor GitHub authentication. A corrupt receipt is an error,
 not a reason to silently reset state. Status commands remain available while
 the maintenance lock is held.
 
-`maintain` collects health, quarantines eligible caches, organizes stable
-personal files, derives names, preserves projects and performs due audits and
-approval-gated updates. Two scopes wait for the owner's one-time consent
+`maintain` collects health, preserves projects, organizes and names files when
+the owner has consented, and performs due audits and approval-gated updates.
+Since 0.4.0 it never deletes or quarantines on a schedule: moving caches into
+quarantine freed nothing and apps rebuilt them beside the copy.
+
+Space is a proposal. `space` (native/attention.py) measures folders their tools
+rebuild (Xcode, Simulator and package-manager caches, policy `cache_paths`),
+dependencies of idle committed projects and anything an earlier version put in
+quarantine, defers tools that are running, and prepares one approval bound to
+the exact folders (device and inode). `free-space --approval ID` deletes them
+after the owner's yes, re-checking identity and running tools, keeps the
+folders themselves, and reports the measured gain. The Trash is a separate
+approval. `digest` runs on the daily Plow automation: it picks at most one item
+(low disk with a ready proposal, Time Machine stale or not set up, a failed
+stage, waiting updates) and keeps repeats quiet unless they get worse. Time
+Machine status comes from `tmutil destinationinfo` and `tmutil latestbackup`;
+an unreadable date is unknown, not stale.
+
+Two scopes wait for the owner's one-time consent
 (`consent.json`, granted only after a preview from the last hour): moving
 personal files, and sending project code to private GitHub. Until then the
 organization stage previews without moving, and project care keeps local secret
@@ -59,8 +75,9 @@ Journaled same-volume moves preserve collisions and can recover an interruption
 between publishing the destination and unlinking the source. Undo never replaces
 a changed or existing file. Multiple cycles are undone newest first.
 
-Quarantine moves old eligible data into `~/Backup/MacGuardian/Quarantine` with
-hashes and restore receipts. It frees zero bytes. Permanent purge needs specific
+Quarantine (legacy `clean`, and data earlier versions set aside) lives in
+`~/Backup/MacGuardian/Quarantine` with restore receipts. It frees zero bytes
+until `free-space` or `purge-quarantine` deletes it with approval. Permanent purge needs specific
 owner consent tied to the exact content, expiring after one hour and usable once.
 Homebrew and App Store upgrades currently need the same explicit consent because
 full downgrade is not guaranteed. Scope, age, source, idle and dependency checks

@@ -16,6 +16,7 @@ export const APP = "~/Library/Application Support/MacGuardian";
 export const LABELS = ["local.macguardian.monitor", "local.macguardian.audit"];
 // Repository path on GitHub -> file name inside this image.
 export const FILES = {
+  "native/attention.py": "attention.py",
   "native/mac_guardian.py": "mac_guardian.py",
   "native/workspace_care.py": "workspace_care.py",
   "scripts/install_native.py": "install_native.py",

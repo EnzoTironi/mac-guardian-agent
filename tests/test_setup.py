@@ -28,11 +28,13 @@ class SetupTests(unittest.TestCase):
         self.commands.start()
         self.addCleanup(self.commands.stop)
 
-    def test_first_storage_question_does_not_block_ready_local_care(self):
+    def test_no_question_about_cloud_storage_that_does_not_exist_yet(self):
         result = self.g.setup_status()
         self.assertEqual(result["status"], "READY")
         self.assertTrue(result["care_ready"])
-        self.assertIsNotNone(result["question"])
+        # Cloud transfer is not implemented, so the first conversation does not ask about it.
+        self.assertIsNone(result["question"])
+        self.assertFalse(result["cloud"]["needs_question"])
         self.assertFalse(result["question_blocks_local_care"])
         self.assertFalse(result["relay_verified"])
         self.assertEqual(result["github_auth"], "not-checked")

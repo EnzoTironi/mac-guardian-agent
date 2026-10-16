@@ -215,8 +215,8 @@ class WorkspaceTests(unittest.TestCase):
                 self.g.archive_worktree(path, snapshot)
         self.assertTrue(path.exists())
 
-    def test_cloud_choice_is_asked_once_and_local_only_is_persistent(self):
-        self.assertTrue(self.g.cloud_status()["needs_question"])
+    def test_cloud_choice_is_never_prompted_and_local_only_is_persistent(self):
+        self.assertFalse(self.g.cloud_status()["needs_question"])
         self.g.configure_cloud(asked=True)
         self.assertFalse(self.g.cloud_status()["needs_question"])
         self.assertTrue(self.g.cloud_status()["awaiting_answer"])

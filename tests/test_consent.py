@@ -53,17 +53,16 @@ class ConsentTests(unittest.TestCase):
         self.assertEqual(preview["summary"]["by_category"], {"Documents": 1})
         self.assertTrue(loose.exists() and pictures.exists())
 
-    def test_background_care_previews_but_never_moves_without_consent(self):
+    def test_background_care_never_touches_files_without_consent(self):
         source = self.personal("Downloads/report.pdf")
-        result = self.maintain()
+        with patch.object(self.g, "organize") as organize, patch.object(self.g, "rename") as rename:
+            result = self.maintain()
+        organize.assert_not_called()
+        rename.assert_not_called()
         self.assertTrue(source.exists())
         self.assertFalse(result["exception"])
-        stage = next(s for s in result["stages"] if s["name"] == "organization")
-        self.assertTrue(stage["ok"])
-        self.assertTrue(stage["result"]["awaiting_consent"])
-        self.assertEqual(stage["result"]["summary"]["files"], 1)
-        self.assertNotIn("naming", [s["name"] for s in result["stages"]])
-        # A background preview is not a preview the owner saw.
+        self.assertFalse({"organization", "naming", "cleanup"} & {s["name"] for s in result["stages"]})
+        # Organization is offered when the owner asks, never computed in the background.
         self.assertFalse((self.g.state / "organization-plan.json").exists())
         self.assertEqual(sorted(self.g.setup_status()["consent_needed"]), ["github-projects", "organize"])
 
@@ -241,6 +240,14 @@ class GitHubConsentTests(unittest.TestCase):
                 self.g.private_project_repo()
             with self.assertRaisesRegex(ValueError, "consent_required"):
                 self.g.project_snapshot(self.project, "owner/backups")
+            git = ["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "-C", str(self.project)]
+            subprocess.run([*git, "add", "README.md", ".gitignore"], check=True)
+            subprocess.run([*git, "commit", "--quiet", "-m", "fixture"], check=True)
+            secondary = self.home / "Code/site-old"
+            subprocess.run([*git, "worktree", "add", "--quiet", "-b", "old", str(secondary)], check=True)
+            with self.assertRaisesRegex(ValueError, "consent_required"):
+                self.g.remove_worktree(secondary, apply=True)
+            self.assertTrue(secondary.exists())
         self.assertEqual(calls, [])
         self.assertFalse(result["github_consent"])
         self.assertEqual(result["items"][0]["status"], "local_only")

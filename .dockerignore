@@ -15,6 +15,7 @@ skills/mac-health/*
 native/*
 !native/mac_guardian.py
 !native/workspace_care.py
+!native/attention.py
 !scripts/
 scripts/*
 !scripts/install_native.py

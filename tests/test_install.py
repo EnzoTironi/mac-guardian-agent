@@ -113,7 +113,8 @@ class GeneratorTests(unittest.TestCase):
     def run_node(self, *args, **env):
         with tempfile.TemporaryDirectory() as tmp:
             image = Path(tmp)
-            for rel, name in {"native/mac_guardian.py": "mac_guardian.py", "native/workspace_care.py": "workspace_care.py",
+            for rel, name in {"native/attention.py": "attention.py", "native/mac_guardian.py": "mac_guardian.py",
+                              "native/workspace_care.py": "workspace_care.py",
                               "scripts/install_native.py": "install_native.py"}.items():
                 (image / name).write_bytes((ROOT / rel).read_bytes())
             environment = {k: v for k, v in os.environ.items() if k not in ("AGENT_ID", "MAC_GUARDIAN_REVISION")}
@@ -127,7 +128,8 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(args["argv"][:3], ["/opt/homebrew/bin/python3", "-I", "-c"])
         self.assertEqual(args["argv"][4], "https://raw.githubusercontent.com/EnzoTironi/mac-guardian-agent/" + "b" * 40 + "/")
         expected = {rel: hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
-                    for rel in ("native/mac_guardian.py", "native/workspace_care.py", "scripts/install_native.py")}
+                    for rel in ("native/attention.py", "native/mac_guardian.py", "native/workspace_care.py",
+                                "scripts/install_native.py")}
         self.assertEqual(json.loads(args["argv"][5]), expected)
         self.assertTrue(args["network"])
         self.assertIn("~/Library/LaunchAgents", args["write_paths"])

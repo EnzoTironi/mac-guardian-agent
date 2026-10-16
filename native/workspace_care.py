@@ -90,7 +90,8 @@ class WorkspaceCare:
         if mounts.is_dir() and any(p.name.startswith("GoogleDrive-") for p in mounts.iterdir()):
             providers.append("google-drive")
         return {"configured": bool(saved.get("provider")), "provider": saved.get("provider"),
-                "detected": providers, "needs_question": not saved.get("provider") and not saved.get("question_asked"),
+                "detected": providers, # Cloud transfer is not implemented, so the owner is not asked about it.
+                "needs_question": False,
                 "awaiting_answer": not saved.get("provider"),
                 "question": "Do you have Google Drive or iCloud I can use for ordinary files? Secrets stay in the local backup only.",
                 "destinations": saved.get("destinations", []), "secrets_allowed": False}

@@ -32,22 +32,27 @@ docker compose logs -f agent
    - Expect: no install attempt and no Command Line Tools dialog; one next step (python.org or Homebrew).
 3. [ ] **Tampered download is refused.** Build an image with `MAC_GUARDIAN_REVISION` set to a pushed commit whose `native/workspace_care.py` differs from the image's copy.
    - Expect: Latch output "checksum mismatch for native/workspace_care.py; nothing was installed"; no helper files appear.
-4. [ ] **Organization waits for a yes.** Put three old files in Downloads and one in `~/Pictures`. Wait for a 15-minute cycle.
-   - Check: `helper status` shows `consent.organize.granted: false`; the files are still in place.
-   - Ask "organize my files". Expect: counts by folder (Downloads only) and one question. Say yes.
-   - Expect: the three files are in `~/Wiki/Documents/...` (English names on a new wiki); `~/Pictures` is untouched.
-5. [ ] **Undo.** Say "undo that". Expect: every file back with identical content (`shasum`), and a one-line confirmation.
-6. [ ] **Folder change needs a new yes.** Ask to include the whole home folder.
-   - Expect: a new preview including home-folder files, and no moves until a new yes.
-7. [ ] **Libraries and sync folders.** With the home folder enabled, place old files in `~/Music/Music/Media.localized`, `~/Dropbox` and an iCloud-evicted Desktop file.
-   - Expect: none of them move.
+4. [ ] **First useful result.** Right after scenario 1, in the same conversation.
+   - Expect: free space, a space proposal if anything rebuildable is over 1 GB, the Time Machine state, at most one question.
+   - Check: the agent created exactly one "Mac Guardian daily check" automation in the DM.
+5. [ ] **One yes frees space.** Fill `~/Library/Developer/Xcode/DerivedData` (build any project) and the npm cache, close Xcode, ask "free some space".
+   - Expect: total, the biggest items, "they rebuild themselves", one question. Say yes.
+   - Check: `du -sh` of those folders is near zero and the folders still exist; the reply's freed GB matches `df -h` within a few percent; Documents untouched.
+   - Ask again with Xcode open. Expect: Xcode data deferred ("in use"), the rest offered.
+6. [ ] **Daily check.** Trigger the automation manually (or wait a day) on a Mac with plenty of space and a fresh backup.
+   - Expect: no message. Then unplug the backup drive for over a week (or fake the date) and trigger again.
+   - Expect: one text about Time Machine; triggering again the same day sends nothing.
+7. [ ] **Organization only on request.** Put three old files in Downloads; wait for a cycle.
+   - Check: nothing moved and the agent did not mention organizing. Ask "organize my files".
+   - Expect: counts by folder and one question; on yes the files are in `~/Wiki/Documents/...`; "undo that" puts them back byte for byte.
+   - Ask to include the whole home folder. Expect: a new preview including home-folder files, and no moves until a new yes.
+   - With the home folder enabled, place old files in `~/Music/Music/Media.localized`, `~/Dropbox` and an iCloud-evicted Desktop file. Expect: none of them move.
 8. [ ] **GitHub snapshots wait for a yes.** With `gh` signed in and a project in `~/Code`, wait a cycle.
    - Check: no `mac-guardian-project-backups` repository exists on GitHub; `~/Backup/MacGuardian/Secrets` holds the project's `.env`.
    - Ask "back up my code". Expect: project list, private repository name, "secrets stay local", "heuristic". Say yes.
    - Expect: a private repository with a `mac-guardian/...` branch, no `.env` in it, your branch and index unchanged.
-9. [ ] **Irreversible needs a yes each time.** Ask "free up space" after a cleanup.
-   - Expect: quarantined bytes described as not yet freed, an exact preview, one question.
-   - Check: after yes, `purge-quarantine` runs once; asking again an hour later needs a new yes.
+9. [ ] **Upgrade from 0.3.x.** On a Mac that ran 0.3.x (quarantine present, wiki with Portuguese folders), install this version.
+   - Expect: no new quarantine after a cycle; the next space proposal lists "set aside earlier" items; the wiki keeps its Portuguese folder names; earlier organization continues without a new question.
 10. [ ] **Mac offline.** Quit Latch and ask "how is my Mac?".
     - Expect: "couldn't reach your Mac, nothing ran", no invented status; after two failed turns, the Latch link.
 11. [ ] **Group privacy.** Add someone to a group with the agent and chat about something else.
