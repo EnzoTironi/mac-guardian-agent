@@ -1,3 +1,5 @@
+# Allow-list: only what the image needs. Credentials, listing settings,
+# private reports and media never enter the build context.
 *
 !Dockerfile
 !prompt/
@@ -8,10 +10,14 @@ skills/*
 !skills/mac-health/
 skills/mac-health/*
 !skills/mac-health/SKILL.md
+!skills/mac-health/scripts/
 !native/
 native/*
 !native/mac_guardian.py
 !native/workspace_care.py
+!scripts/
+scripts/*
+!scripts/install_native.py
 !runtime/
 runtime/*
 !runtime/healthcheck.mjs
@@ -20,3 +26,4 @@ private
 .env
 listing.json
 agent.env
+**/__pycache__

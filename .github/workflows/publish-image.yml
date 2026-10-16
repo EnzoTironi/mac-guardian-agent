@@ -47,6 +47,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # The Mac installs the helper from this exact pushed commit.
+          build-args: |
+            MAC_GUARDIAN_REVISION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Publication receipt
