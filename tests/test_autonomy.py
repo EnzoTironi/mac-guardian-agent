@@ -5,8 +5,12 @@ from pathlib import Path
 import subprocess
 import tempfile
 import time
+import sys
 import unittest
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).parent))
+import consent_helper  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("guardian", Path(__file__).parents[1] / "native/mac_guardian.py")
 m = importlib.util.module_from_spec(spec)
@@ -21,6 +25,7 @@ class AutonomyTests(unittest.TestCase):
         self.home = self.root / "home"
         self.home.mkdir()
         self.g = m.Guardian(self.home, self.root / "state")
+        consent_helper.grant_all(self.g)
 
     def personal(self, name, data=b"personal document", old=True):
         path = self.home / name
@@ -40,9 +45,9 @@ class AutonomyTests(unittest.TestCase):
         with patch.object(m, "in_use", return_value=False):
             result = self.g.organize(True)
         self.assertEqual(len(result["items"]), 3)
-        self.assertTrue((self.home / "Wiki/Documentos/Viagens/Italia/roteiro.pdf").exists())
+        self.assertTrue((self.home / "Wiki/Documents/Viagens/Italia/roteiro.pdf").exists())
         self.assertTrue(all(not p.exists() for p in paths))
-        self.assertIn("roteiro.pdf", (self.home / "Wiki/Documentos/_Index.md").read_text())
+        self.assertIn("roteiro.pdf", (self.home / "Wiki/Documents/_Index.md").read_text())
         self.g.undo(result["transaction"])
         self.assertTrue(all(p.read_bytes() == b"personal document" for p in paths))
 
@@ -60,7 +65,7 @@ class AutonomyTests(unittest.TestCase):
                  self.personal("Downloads/app/manual.pdf")]
         self.personal("Downloads/app/pyproject.toml", b"[project]")
         target = self.personal("Downloads/linked.pdf")
-        (self.home / "Desktop").mkdir()
+        (self.home / "Desktop").mkdir(exist_ok=True)
         (self.home / "Desktop/alias.pdf").symlink_to(target)
         with patch.object(m, "in_use", side_effect=lambda p: Path(p).name == "open.pdf"):
             self.g.organize(True)
@@ -301,10 +306,12 @@ class AutonomyTests(unittest.TestCase):
     def test_documents_and_cloud_roots_are_excluded_even_in_old_policy(self):
         source = self.personal("Documents/private.pdf")
         self.g.policy["organization_roots"] = ["Documents"]
+        self.assertEqual(self.g.organize(False)["items"], [])
+        self.g.grant_consent("organize", "Test owner: yes")
         self.assertEqual(self.g.organize(True)["items"], [])
         self.assertTrue(source.exists())
         self.g.policy["backup_roots"] = ["Documents"]
-        with self.assertRaisesRegex(ValueError, "excluída"):
+        with self.assertRaisesRegex(ValueError, "excluded"):
             self.g.backup_manifest(source.parent)
         self.g.policy["file_wiki_root"] = "Documents/Wiki"
         with self.assertRaisesRegex(ValueError, "Documents"):
@@ -356,7 +363,7 @@ class AutonomyTests(unittest.TestCase):
         self.assertEqual(result["items"], [])
         self.assertEqual(result["pending_context"], 1)
         old_hash = m.digest(path)
-        with self.assertRaisesRegex(ValueError, "mudou"):
+        with self.assertRaisesRegex(ValueError, "changed"):
             self.g.rename_file(path, "notas-da-viagem.txt", "wrong", "Context reviewed")
         with patch.object(m, "in_use", return_value=False):
             result = self.g.rename_file(path, "notas-da-viagem.txt", old_hash, "Read the notes and existing topic; preserve original extension.")
@@ -451,7 +458,7 @@ class AutonomyTests(unittest.TestCase):
         path = self.personal("Wiki/Documentos/notes.md", b"# Local meeting notes\n")
         project = self.personal("Wiki/Documentos/Project/README.md", b"# Project documentation\n")
         self.personal("Wiki/Documentos/Project/package.json", b"{}")
-        with self.assertRaisesRegex(ValueError, "Nome"):
+        with self.assertRaisesRegex(ValueError, "Invalid name"):
             self.g.rename_file(path, "meeting\nnotes.md", m.digest(path), "Read the content")
         with patch.object(m, "in_use", return_value=False):
             self.g.rename(True)

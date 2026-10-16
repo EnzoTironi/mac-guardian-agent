@@ -6,8 +6,12 @@ from pathlib import Path
 import subprocess
 import tempfile
 import time
+import sys
 import unittest
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).parent))
+import consent_helper  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("guardian", Path(__file__).parents[1] / "native/mac_guardian.py")
 m = importlib.util.module_from_spec(spec)
@@ -22,6 +26,7 @@ class GuardianTests(unittest.TestCase):
         self.home = self.root / "home"
         self.home.mkdir()
         self.g = m.Guardian(self.home, self.root / "state")
+        consent_helper.grant_all(self.g)
 
     def old(self, path, days=45):
         for p in [*path.rglob("*"), path]:
@@ -97,19 +102,19 @@ class GuardianTests(unittest.TestCase):
         p.mkdir(parents=True)
         (p.parent / "package.json").write_text("{}")
         (p.parent / "package-lock.json").write_text("{}")
-        with self.assertRaisesRegex(ValueError, "gerenciado"):
+        with self.assertRaisesRegex(ValueError, "Codex-managed"):
             self.g.eligible(p, "node_modules")
 
     def test_organization_is_reversible_and_never_overwrites(self):
         root = self.home / "Downloads"
-        root.mkdir()
+        root.mkdir(exist_ok=True)
         source = root / "report.pdf"
         source.write_bytes(b"private document")
         os.utime(source, (time.time() - 14 * m.DAY,) * 2)
         with patch.object(m, "in_use", return_value=False):
             result = self.g.organize(True)
         dest = Path(result["items"][0]["destination"])
-        self.assertTrue(dest.is_relative_to(self.home / "Wiki/Documentos"))
+        self.assertTrue(dest.is_relative_to(self.home / "Wiki/Documents"))
         self.assertFalse(source.exists())
         self.assertEqual(dest.read_bytes(), b"private document")
         self.g.undo(result["transaction"])
@@ -171,7 +176,7 @@ class GuardianTests(unittest.TestCase):
         (modules / "installed.js").write_text("dependency")
         self.old(modules)
         (root / "package.json").write_text('{"changed": true}')
-        with self.assertRaisesRegex(ValueError, "alterações"):
+        with self.assertRaisesRegex(ValueError, "local changes"):
             self.g.eligible(modules, "node_modules")
         self.assertTrue(modules.exists())
 
@@ -226,14 +231,14 @@ class GuardianTests(unittest.TestCase):
     def test_public_repo_cannot_receive_private_data(self):
         source, remote = self.prepare_remote()
         with patch.object(m, "require", side_effect=self.fake_require(remote, private=False)):
-            with self.assertRaisesRegex(ValueError, "privado"):
+            with self.assertRaisesRegex(ValueError, "private repository"):
                 self.g.backup(source, "test/public", offload=True)
         self.assertTrue((source / "one.txt").exists())
 
     def test_corrupt_restore_preserves_local_original(self):
         source, remote = self.prepare_remote()
         with patch.object(m, "require", side_effect=self.fake_require(remote, tamper=True)):
-            with self.assertRaisesRegex(ValueError, "divergiu"):
+            with self.assertRaisesRegex(ValueError, "diverged"):
                 self.g.backup(source, "test/private", offload=True)
         self.assertEqual((source / "one.txt").read_text(), "relevant notes")
 

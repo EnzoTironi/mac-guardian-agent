@@ -15,6 +15,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "native"))
 import mac_guardian as m
+sys.path.insert(0, str(Path(__file__).parent))
+import consent_helper  # noqa: E402
 
 
 class WorkspaceTests(unittest.TestCase):
@@ -25,6 +27,7 @@ class WorkspaceTests(unittest.TestCase):
         self.home = self.root / "home"
         self.home.mkdir()
         self.g = m.Guardian(self.home, self.root / "state")
+        consent_helper.grant_all(self.g)
         self.remote = self.root / "remote.git"
         self.git(self.root, "init", "--bare", "--initial-branch=main", str(self.remote))
 
@@ -129,14 +132,14 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_public_remote_is_rejected_before_upload(self):
         path = self.project()
-        with self.github(private=False), self.assertRaisesRegex(ValueError, "privado"):
+        with self.github(private=False), self.assertRaisesRegex(ValueError, "private repository"):
             self.g.project_snapshot(path, "test/private")
         self.assertEqual(self.git(self.remote, "for-each-ref").strip(), b"")
 
     def test_changed_source_after_remote_clone_blocks_verified_receipt(self):
         path = self.project()
         with self.github(mutate=lambda: (path / "README.md").write_text("Changed during backup")), \
-             self.assertRaisesRegex(ValueError, "Origem mudou"):
+             self.assertRaisesRegex(ValueError, "Source changed"):
             self.g.project_snapshot(path, "test/private")
         self.assertTrue(path.exists())
         self.assertFalse((self.g.state / "project-snapshots.json").exists())
@@ -196,7 +199,7 @@ class WorkspaceTests(unittest.TestCase):
             result = self.g.remove_worktree(path, apply=True)
             folder = self.g.receipt_path("Worktrees", result["receipt"]).parent
             (folder / "files.zip").write_bytes(b"corrupted")
-            with self.assertRaisesRegex(ValueError, "alterado"):
+            with self.assertRaisesRegex(ValueError, "modified"):
                 self.g.restore_worktree(result["receipt"])
         self.assertFalse(path.exists())
 
@@ -204,11 +207,11 @@ class WorkspaceTests(unittest.TestCase):
         main, path = self.worktree()
         with self.github():
             snapshot = self.g.project_snapshot(path, "test/private")
-            with self.assertRaisesRegex(ValueError, "recente"):
+            with self.assertRaisesRegex(ValueError, "recent"):
                 self.g.archive_worktree(path, snapshot)
             self.old(path)
             self.git(main, "worktree", "lock", str(path))
-            with self.assertRaisesRegex(ValueError, "bloqueado"):
+            with self.assertRaisesRegex(ValueError, "locked"):
                 self.g.archive_worktree(path, snapshot)
         self.assertTrue(path.exists())
 
@@ -240,7 +243,7 @@ class WorkspaceTests(unittest.TestCase):
         copies = list((self.home / "Backup/MacGuardian/Secrets").rglob("content"))
         self.assertEqual(len(copies), 1)
         identity, version = copies[0].parent.parent.name, copies[0].parent.name
-        with self.assertRaisesRegex(ValueError, "sobrescreveria"):
+        with self.assertRaisesRegex(ValueError, "overwrite"):
             self.g.restore_secret(identity, version)
         path.unlink()
         self.assertTrue(self.g.restore_secret(identity, version)["verified"])
@@ -249,7 +252,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_purge_requires_exact_fresh_single_use_owner_approval(self):
         path = self.personal("OldCache/content.txt", "Recoverable cache").parent
         result = self.g.quarantine_tree(path, "cache")
-        with self.assertRaisesRegex(ValueError, "autorização"), patch.object(m, "in_use", return_value=False):
+        with self.assertRaisesRegex(ValueError, "authorization"), patch.object(m, "in_use", return_value=False):
             self.g.purge_quarantine(result["receipt"], apply=True)
         request = self.g.purge_quarantine(result["receipt"])
         self.g.approve(request["request_id"], "Owner: permanently delete this cache")
@@ -264,7 +267,7 @@ class WorkspaceTests(unittest.TestCase):
         self.g.approve(request["request_id"], "Owner: permanently delete this cache")
         target = Path(result["destination"]) / "content.txt"
         target.write_text("New content")
-        with patch.object(m, "in_use", return_value=False), self.assertRaisesRegex(ValueError, "autorização"):
+        with patch.object(m, "in_use", return_value=False), self.assertRaisesRegex(ValueError, "authorization"):
             self.g.purge_quarantine(result["receipt"], True, request["request_id"])
         self.assertTrue(target.exists())
 
@@ -287,7 +290,7 @@ class WorkspaceTests(unittest.TestCase):
         untouched = self.personal(str(project.relative_to(self.home) / "untitled.md"), "# Project source")
         with patch.object(m, "in_use", return_value=False):
             result = self.g.organize(True)
-        expected = self.home / "Wiki/Documentos/northstar/brand-launch-plan.md"
+        expected = self.home / "Wiki/Documents/northstar/brand-launch-plan.md"
         self.assertTrue(expected.exists())
         self.assertTrue(untouched.exists())
         self.assertIn("brand-launch-plan.md", (expected.parent / "_Index.md").read_text())
@@ -306,23 +309,23 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIn("Client/_Index.md", category.read_text())
         self.assertIn("../_MacGuardian-1.md", (category.parent / "Client/_Index.md").read_text())
         self.assertIn("Year/_Index.md", (category.parent / "Client/_Index.md").read_text())
-        self.assertIn("# Wiki pessoal", Path(result["home"]).read_text())
+        self.assertIn("# Personal wiki", Path(result["home"]).read_text())
         root_generated = [p.read_text() for p in (self.home / "Wiki").glob("_MacGuardian-*.md")]
-        self.assertTrue(any("# Projetos" in text for text in root_generated))
-        self.assertTrue(any("# Wiki pessoal" in text for text in root_generated))
+        self.assertTrue(any("# Projects" in text for text in root_generated))
+        self.assertTrue(any("# Personal wiki" in text for text in root_generated))
 
     def test_agent_classification_uses_hash_evidence_and_can_be_undone(self):
         path = self.personal("Family/reports/scan.txt", "A school timetable")
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         with patch.object(m, "in_use", return_value=False):
-            result = self.g.classify_file(path, "Documentos", "school", "school-timetable.txt", digest, "The content describes a school timetable")
-        destination = self.home / "Wiki/Documentos/school/school-timetable.txt"
+            result = self.g.classify_file(path, "documents", "school", "school-timetable.txt", digest, "The content describes a school timetable")
+        destination = self.home / "Wiki/Documents/school/school-timetable.txt"
         self.assertTrue(destination.exists())
         self.g.undo(result["transaction"])
         self.assertTrue(path.exists())
         path.write_text("Changed")
-        with self.assertRaisesRegex(ValueError, "alterado"):
-            self.g.classify_file(path, "Documentos", "school", "school-timetable.txt", digest, "Previous analysis")
+        with self.assertRaisesRegex(ValueError, "changed since the analysis"):
+            self.g.classify_file(path, "documents", "school", "school-timetable.txt", digest, "Previous analysis")
 
     def test_local_ref_cursor_reaches_every_branch_across_cycles(self):
         path = self.project()
@@ -363,7 +366,7 @@ class WorkspaceTests(unittest.TestCase):
             self.assertEqual(self.g.organize(True)["items"], [])
         for path in files:
             self.assertTrue(path.exists())
-            with self.assertRaisesRegex(ValueError, "preservam"):
+            with self.assertRaisesRegex(ValueError, "keep their paths"):
                 self.g.classify_file(path, "Documentos", "notes", "notes.txt", m.digest(path), "Example evidence")
 
     def test_project_discovery_resumes_after_directory_budget(self):
