@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { test } from "node:test";
-import { gatewayReady } from "/opt/mac-guardian/runtime/healthcheck.mjs";
+import { existsSync } from "node:fs";
+
+// Inside the image the installed copy is tested; in a checkout, the source.
+const installed = "/opt/mac-guardian/runtime/healthcheck.mjs";
+const { gatewayReady } = await import(existsSync(installed) ? installed : new URL("../../runtime/healthcheck.mjs", import.meta.url).href);
 
 const cases = [
   { name: "ready gateway", code: 200, body: { ready: true, failing: [] }, expected: true },

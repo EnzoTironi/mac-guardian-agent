@@ -2,255 +2,218 @@
 
 ![Your Mac has a doctor now](media/campaign-v1/images/01-your-mac-has-a-doctor.png)
 
-[English campaign and 40-second HyperFrames film](media/campaign-v1/README.md)
+Mac Guardian texts you before your disk fills, frees space with one yes, tells
+you when your backups stop, and keeps your project code backed up. It runs a
+small helper on your Mac through Plow Latch and talks to you over text. It never
+deletes anything without your OK, and it is quiet when there is nothing to say.
 
-Mac Guardian maintains your Mac quietly and answers by conversation. It organizes
-personal files into a physical wiki, names them from their content, preserves
-project work on private GitHub branches and keeps secrets in a local Backup
-folder. Reversible work runs automatically. Procedures without guaranteed
-restoration require your approval.
+[English campaign and 40-second film](media/campaign-v1/README.md) ·
+[Agent Index page](https://aiworthusing.com/agent-index/mac-guardian)
 
-Its voice is warm, direct and practical. It answers useful requests first, takes
-the next authorized step, explains results briefly and stays quiet when there is
-nothing actionable. The personality follows the Plow base's
-[new default persona](https://github.com/plow-pbc/plow-openclaw-agent/blob/8644de7470f670086ef991787ae979ec8bb5e047/prompt/AGENTS.md),
-adapted to Mac care with concrete conversation examples. Style changes preserve
-storage choices, permissions and notification rules. Version 0.3.2 adds native
-setup evidence and image verification using the
-[Meetly operating patterns](docs/meetly-patterns.md). Personality controls are
-not added by this integration.
-[Conversation fixtures and exact model responses](evidence/personality-v0.3.1.json)
-show the evaluated voice using fictional receipts, without external delivery.
+A first conversation, with fictional numbers:
 
-Built on the official Plow OpenClaw image. The native macOS worker continues
-while the conversation container is stopped. Public name: **Mac Guardian**;
-Agent Index slug: `mac-guardian`. This project's code is MIT. Upstream OpenClaw,
-Plow, Caddy, Mole and Vorssaint retain their own licenses.
+> **You:** Can you look after my Mac?
+>
+> **Mac Guardian:** I'm Mac Guardian. I'll install a small helper on your Mac:
+> two background jobs, nothing uploaded. Latch will ask you to approve it.
+>
+> *(you tap Allow in Latch)*
+>
+> **Mac Guardian:** You have 38 GB free of 500 GB. I can free 14 GB of Xcode
+> build data and npm cache; they rebuild themselves. Time Machine last backed
+> up yesterday. Free the 14 GB?
+>
+> **You:** yes
+>
+> **Mac Guardian:** Freed 14.2 GB. You have 52 GB free now.
 
-## Automatic care
+Then, once a day, it checks. Most days it says nothing. When something needs
+you, it sends one text with one question:
 
-- Every 15 minutes: disk, memory, swap, load, CPU/RAM processes and battery, with
-  up to 30 days of local history. A daily full audit runs at 09:10 local time.
-- Recursive organization of eligible personal files across the home directory,
-  including Downloads, Desktop and nested folders. Files live in
-  `~/Wiki/CATEGORY/SUBJECT`, with linked Markdown indexes at every folder level.
-- Descriptive names from local text, Office titles, PDF text, OCR and media tags.
-  Explicit client/project subjects determine the destination. The conversational
-  agent reviews ambiguous cases and applies a matching hash and recorded reason.
-- Journaled moves and names, collision preservation and recovery after interruption.
-- Private project snapshots: working changes, untracked code and unpublished
-  local branch tips, without switching the user's branch or changing their index.
-  Projects without Git can also be saved without initializing their source folder.
-- Local versioned secret backups in `~/Backup/MacGuardian/Secrets`, hash-verified,
-  deduplicated and owner-only. `.env`, `.envrc`, `.npmrc`, credentials, private keys
-  and detected secret-bearing files never enter project snapshots.
-- Old eligible caches/build artifacts move to a restorable quarantine. Ordinary
-  old worktrees are archived only after a verified private snapshot and a complete
-  local recovery copy of files, ignored data, Git history and staged changes.
-- Update-source checks, app/signature inventory, background jobs/listeners and
-  persistent investigation queues. Notifications occur only for actionable issues.
+> **Mac Guardian:** Your disk is 92% full (40 GB left). I can free 11 GB of
+> Homebrew downloads and build folders from projects you haven't touched in a
+> month. Free it?
 
-For example, `Family/Client/raw/untitled.md` containing a heading
-`# Brand launch plan` and `Client: Northstar` becomes
-`~/Wiki/Documentos/northstar/brand-launch-plan.md`. The wiki contains the actual
-file, its subject index, category navigation and `Home.md`. `Projects.md` links to
-source projects in their original locations. Health reports are separate.
+> **Mac Guardian:** Time Machine hasn't backed up in 12 days. Plug in the backup
+> drive and it will catch up.
 
-The worker waits for two hours without changes and checks open files. Source
-projects, existing vaults, configurations, system/app libraries and VM bundles
-retain their paths. `Documents`, `Library/Mobile Documents` and
-`Library/CloudStorage`, including aliases to those roots, are excluded.
-Mounted volumes and OrbStack data retain their paths. Automatic file care stays
-on the home filesystem, where journaled hard links can guarantee recovery.
-An unexpected cross-device change preserves that source and lets other moves
-continue. Files with insufficient context wait for further review rather than receiving
-invented names. Local secret detection is heuristic, not an exhaustive guarantee.
+## What it does, what it asks first, what it never does
 
-## Recovery and permission
+**On its own, once installed** (every action has a receipt):
 
-Reversible operations run within the enabled policy without a fresh approval.
-Quarantine is a same-volume move: it preserves metadata and frees **zero bytes**.
-Permanent deletion, emptying Trash, deleting backups and procedures without
-complete rollback require explicit consent for the specific preview.
-Approval IDs bind to exact content/version, expire after one hour and are used once.
+- Health every 15 minutes (disk, memory, swap, load, processes, battery, with
+  30 days of history) and a full audit daily at 09:10: apps, signatures,
+  update sources, Time Machine, background services and listeners.
+- One daily check that texts you only for low disk (with a ready proposal), a
+  stale or missing Time Machine backup, a failed routine or waiting updates.
+  The same thing is not repeated for days unless it gets worse.
+- Secret files from your projects (`.env`, credentials, private keys, detected
+  secret-bearing files) are copied into `~/Backup/MacGuardian/Secrets`:
+  owner-only, versioned by hash, never uploaded.
 
-Homebrew/App Store updates are checked automatically. This version requires
-approval before upgrades because a complete downgrade is not guaranteed. After
-approval, it verifies official sources, idle apps/dependencies and the updater
-result. Pinned packages, unknown taps, installer hooks, sudo, licenses and restarts
-are preserved or deferred. Unknown update sources stay pending; signatures and
-Gatekeeper checks do not prove malware absence.
+**Your yes every time**, for an exact list:
 
-Ordinary secondary worktrees need both verified remote code and a complete local
-recovery archive: dirty/untracked/ignored files, secrets, symlinks, empty folders,
-modes, timestamps, xattrs, history/refs, Git config and the original index. Failed,
-busy, recent, locked, oversized, special-file, hardlink, submodule and split-index
-cases remain in place. **Codex worktrees use the native managed archive in their
-owning chat.** No manual forced removal can bypass preservation checks.
+- **Freeing space.** Only folders their tools rebuild: Xcode build data and
+  Simulator caches, Homebrew, npm, pip, uv, Yarn, Go, Gradle, Cargo and
+  CocoaPods caches, and `node_modules`/`target` of committed projects idle for
+  30 days. Anything in use is skipped. One yes frees the whole list. Your
+  documents are never on it.
+- **Emptying the Trash**, as its own question. Also deleting backups, app and
+  package updates (no guaranteed downgrade), installers, and security or
+  service changes. An approval matches that exact list, expires after an hour
+  and is used once.
 
-The local Backup folder is `0700`; secret content and receipts are `0600`. Local
-recovery does not protect against loss of the device. Backups are retained until
-explicit deletion is approved. Private GitHub is not encryption.
+**One yes, then automatically:**
 
-## Install on the Mac
+- **Private GitHub snapshots of project code.** Working changes, untracked code
+  and unpublished branch tips go to private branches in
+  `YOUR-LOGIN/mac-guardian-project-backups`, verified from a fresh clone. Your
+  branch, index and files are never changed. Without this yes, no repository is
+  created and no code leaves the Mac.
+- **Organizing files, only if you ask.** It shows how many files would move
+  from Downloads and Desktop into `~/Wiki/CATEGORY/SUBJECT`, named from their
+  content, and every move can be undone. It never offers this on its own.
 
-Requires macOS, Python 3.11+ and Git. Authenticated `gh` enables private project
-preservation. Optional `pdftotext`, Tesseract and `ffprobe` improve local extraction.
+**Never:** deleting or moving anything on a schedule; touching Documents,
+iCloud Drive, CloudStorage, sync folders such as Dropbox and OneDrive, app media
+libraries, projects, vaults or system and app internals; uploading secrets
+anywhere; forcing sudo, killing apps, accepting licenses or rebooting.
+
+## Install
+
+Mac Guardian needs [Plow Latch](https://plow.co/download/latch) on the Mac and
+Python 3.11 or newer there (Homebrew's `python3` or the
+[python.org installer](https://www.python.org/downloads/macos/)).
+
+1. Open the [Agent Index page](https://aiworthusing.com/agent-index/mac-guardian)
+   and tap **Text this agent**. This appears once Plow enables one-click deploy
+   for this image; until then, run it yourself as below.
+2. Text it. On your first Mac request it checks your Mac through Latch and
+   installs its helper. You approve that once in Latch; you never open a terminal.
+3. In that same conversation you get your free space, what can be freed and
+   whether Time Machine is running, with at most one question. It then sets up
+   its daily check in your chat.
+
+To stop it: ask it to stop its background jobs (the uninstall keeps your wiki,
+reports and backups), or remove the agent's line in Plow.
+
+### Manual install from a terminal
 
 ```sh
-git clone --branch v0.3.2 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
+git clone --branch v0.4.0 --depth 1 https://github.com/EnzoTironi/mac-guardian-agent.git
 cd mac-guardian-agent
-python3 -m unittest discover -s tests -v
-python3 scripts/install_native.py
+python3 -m unittest discover -s tests
+python3 scripts/install_native.py           # --uninstall removes the jobs, keeps data
 ```
 
-The installer copies both native modules and installs two LaunchAgents. It
-preserves existing policy choices, wiki, reports and backups on reinstall.
-Configuration is in `~/Library/Application Support/MacGuardian/state/policy.json`.
-New installations cover the home tree; old custom root choices remain unchanged.
-To remove the jobs while preserving data:
+Configuration lives in `~/Library/Application Support/MacGuardian/state/policy.json`.
+Reinstalling keeps every choice, consent, wiki and backup.
+
+## Run locally
+
+Needs Docker with Compose 2.24+ and [plow-agents](https://github.com/plow-pbc/plow-agents).
 
 ```sh
-python3 scripts/install_native.py --uninstall
-```
-
-## Storage preference and projects
-
-On first contact the agent asks once about Google Drive or iCloud for ordinary
-files. It records the answer and continues local care while awaiting it. Choosing
-local-only keeps personal files and reports local. Recording a cloud destination
-is preparation; cloud transfer is not implemented in this version. Secret backups
-are always local. GitHub project preservation follows separate owner authorization.
-
-```sh
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" configure-cloud --provider none
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" projects --dry-run
-```
-
-With authenticated `gh`, the enabled project routine creates or verifies the
-owner's private `OWNER/mac-guardian-project-backups` companion repository. Each
-project and local ref gets a separate `mac-guardian/...` branch. It sends allowed
-working files, preserving ongoing work without modifying the source branch/index.
-Original history is not used as a parent, so secrets in old commits are excluded.
-A fresh no-checkout remote clone verifies every allowed blob's SHA-256. Build data,
-ignored files and detected secrets stay local. Before archiving a worktree, a
-private local Git bundle also preserves unpublished history and staged blobs.
-
-Project visits and branch cursors continue across cycles (three projects and
-20 refs per cycle by default). Large or unsupported data remain local. GitHub
-failure preserves the project and still allows local secret protection.
-Personal wiki files are not uploaded as part of this routine. Optional legacy
-`backup_roots`/`backup_repo` are separate explicit report/folder selections;
-local-only preference disables automatic report uploads.
-
-## Conversation and recovery commands
-
-Ask “How is my Mac?”, “What used space today?”, “Pause for two hours”, “Resume”,
-“Undo the last organization” or “Restore that worktree.” Routine success is quiet.
-The owner is contacted for critical storage, confirmed risk or a concrete
-irreversible decision. Monitoring continues during a pause.
-
-For direct local inspection:
-
-```sh
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" status
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" doctor
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" setup-status
-python3 "$HOME/Library/Application Support/MacGuardian/mac_guardian.py" maintain --dry-run
-```
-
-`organize --apply` and `rename --apply` return a transaction; `undo TRANSACTION`
-restores unchanged files. `maintain` combines that cycle's moves/names into
-`file_transaction`; undo multiple cycles newest first. `naming-context` returns
-bounded local evidence; `classify-file` applies category/topic/name after content
-review, with a matching SHA-256 and reason.
-
-Recovery uses `restore-quarantine --receipt ID`, `restore-worktree --receipt ID`
-and `restore-secret --identity ID --version SHA`. Restores never overwrite an
-existing destination. `purge-quarantine --receipt ID` prepares a deletion request.
-Only the owner's explicit consent can be recorded with `approve --id REQUEST_ID
---evidence OWNER_WORDS`, then consumed by `purge-quarantine --receipt ID --apply
---approval REQUEST_ID`. The conversational agent must never invent that consent.
-
-`setup-status` reads current installation, collector freshness, worker failures,
-pause and storage preference. The conversation follows its next action instead
-of repeating an earlier setup question. A native READY result does not prove
-Latch connectivity or GitHub authentication. Optional tools and an unanswered
-storage question do not block local reversible care.
-
-Mole's `mo clean --dry-run`, `mo purge --dry-run` and `mo optimize --dry-run` can
-supply additional previews. Broad cleanup may empty Trash; use specific approval
-before execution. Vorssaint is a native app, not an assumed maintenance CLI.
-
-## Run and publish on Plow
-
-Docker, Plow and Latch connected to the real Mac enable conversation. A fixture
-Latch cannot operate the owner's device. Configure an owner-chosen listing:
-
-```sh
-python3 scripts/configure_listing.py --slug YOUR_SLUG --name 'Your Agent' --blurb 'Your description'
 plow-agents login
-plow-agents lines
-plow-agents deploy --local --line ln_p1
-docker compose up -d
+plow-agents lines                      # pick a free line
+plow-agents mint LINE_UID              # writes ./plow-credentials (never committed)
+MAC_GUARDIAN_REVISION=$(git rev-parse HEAD) docker compose up --build -d
+docker compose logs -f agent           # wait for the identity line, then text the number
 ```
 
-Use an available line, then text the number shown by Plow. The official base
-entrypoint and genuine five-minute usage reporter remain inherited. `AGENT_ID`
-is required for registration/reporting; persistent Plow state is kept on restart.
-Do not mount the home directory, Docker socket or GitHub credentials in the agent.
+`MAC_GUARDIAN_REVISION` must be a commit that is pushed to GitHub: the Mac
+installs the helper from that commit and checks it against the image. The local
+dashboard proxy listens on `127.0.0.1:3012` (`HOST_PORT` changes it) and grants
+admin access to anyone who can reach it. `docker compose down` keeps state;
+`down -v` starts fresh. Do not mount your home folder, the Docker socket or
+GitHub credentials into the agent.
+
+## Deploy
 
 ```sh
-python3 scripts/build_publish.py ghcr.io/YOU/your-agent:v1
-plow-agents image push ghcr.io/YOU/your-agent:v1
+python3 scripts/configure_listing.py --slug YOUR_SLUG --name 'Your Agent' --blurb 'One line'
+python3 scripts/build_publish.py ghcr.io/YOU/mac-guardian-agent:v0.4.0 --push
 plow-agents profile --show
 ```
 
-The default build is `linux/amd64`; use `--platform linux/arm64` for local Apple
-Silicon testing. The pinned base supports both architectures. `--push` and
-`--promote` on the build script run the isolated image tests before publication.
-GitHub Actions checks Python behavior on Ubuntu and macOS and probes the built
-Intel image. Main commits and version tags publish both architectures only after
-those checks pass. The Actions run summary contains the immutable image digest;
-updating `latest` requires an explicit manual dispatch. Publishing does not
-change a running deployment or its Plow state.
-The workflow owns `ghcr.io/OWNER/mac-guardian-agent`, linked to this repository.
-The earlier `mac-guardian` package remains available for previous versions.
+`build_publish.py` refuses a dirty tree or an unpushed commit, builds with that
+commit pinned, runs the isolated image tests, and pushes with `plow-agents`.
+CI does the same on `main` and version tags for Intel and Apple Silicon and
+prints the immutable digest and the `plow-agents image promote` command. Keep
+the package public and check anonymous pull. A Plow admin enables one-click
+deploy from your UID, slug and digest; later releases use
+`plow-agents image push IMAGE --promote SLUG`. The image keeps the base boot and
+its five-minute usage reporter, which free hosting requires.
 
-The development proxy binds to loopback port 3012. Set `HOST_PORT` to avoid a
-local port conflict. It grants local admin access and is installation
-infrastructure; maintenance remains conversational. The container healthcheck
-uses the gateway's `/readyz` response without loading configuration or acquiring
-the state lock. A parked container is not a ready gateway, and a ready gateway
-does not establish that the Mac is reachable.
+## How it works
 
-Keep the image public and verify anonymous pull. An admin enables first one-click deploy
-from the UID, slug and image digest posted by the owner in
-[Agent Index Discord](https://aiworthusing.com/discord). Later updates use
-`plow-agents image push IMAGE --promote SLUG`.
-Register demo video, image and install URL with the
-[official client](https://github.com/plow-pbc/agent-index-client), then post repo,
-commit and ID in the [verification thread](https://discord.com/channels/1519035948191449268/1549100840583700481).
-Plow removes WIP after validation. Source/image publication alone does not do so.
+Two parts: a conversation container on Plow's OpenClaw base (identity,
+transport, usage reporting inherited) and a native Python helper on the Mac,
+run every 15 minutes by launchd, that keeps measuring while the container is
+stopped. A daily Plow automation asks the helper for its digest and turns the
+one item worth saying, if any, into a text. Latch carries each command, with declared paths and network, and the
+owner approves on the Mac. Deterministic work (checks, receipts, consent,
+approvals, hashes, recovery) lives in the helper; the model reads ambiguous
+content and talks.
 
-## Validation and privacy
+- [Architecture](docs/architecture.md): install path, consent, wiki, quarantine,
+  snapshots, worktree archives, security observations.
+- [Verification and limits](docs/verification.md): what each test proves and does not.
+- [Review rules](REVIEW.md) and [Meetly patterns](docs/meetly-patterns.md).
+- [Manual end-to-end checks](checks/manual-scenarios.md) on a real Mac.
+
+Things to say: "How is my Mac?", "Free some space", "Empty the Trash", "Is my
+backup working?", "Back up my code", "Organize my files", "Undo that", "Pause for
+two hours", "Resume", "Stop your background jobs".
+
+## Known limitations
+
+- Needs Python 3.11+ on the Mac; without it nothing installs until you add one.
+- Latch must be connected for any Mac work; the agent reports an unreachable
+  Mac instead of guessing. Whether Latch's sandbox allows `launchctl` for the
+  install has not been verified on a real Mac in this release.
+- Secret detection is heuristic (names and common key formats), not a guarantee.
+  Private GitHub is not encryption.
+- The daily check runs as a Plow automation in your chat; if the Mac or Latch is
+  asleep at that time, that day's check is skipped. Low disk is caught at the
+  next check, not the moment it happens.
+- The Time Machine check reads `tmutil`; without Full Disk Access the date of the
+  last backup can be unknown, and then it says nothing rather than guess. The
+  Trash size has the same limit.
+- Local secret backups do not protect against losing the Mac; Time Machine does.
+- If you ask for file organization on an iCloud-synced Desktop, moved files stop
+  syncing; placeholders are skipped, downloaded files are moved like any other.
+- No cloud-file transfer: Mac Guardian does not move files to Drive or iCloud.
+- Update coverage is incomplete for unknown sources; signatures and Gatekeeper
+  do not prove the absence of malware; app updates have no guaranteed downgrade.
+
+## Development
 
 ```sh
-python3 -m unittest discover -s tests -v
-docker build --platform linux/amd64 --tag mac-guardian:check .
+python3 -m unittest discover -s tests -v       # safety, consent, install, prompt contract
+node --test tests/runtime/*.test.mjs           # image tests skip outside the image
+docker build --platform linux/amd64 --build-arg MAC_GUARDIAN_REVISION=$(git rev-parse HEAD) -t mac-guardian:check .
 python3 scripts/test_image.py mac-guardian:check --platform linux/amd64
 python3 scripts/demo_workspace.py --output private/workspace-demo
 ```
 
-Tests use isolated homes and real local Git remotes. They cover unmodified
-branches/indexes, remote verification, exclusion of current/historical secrets,
-full worktree recovery with staged/dirty/ignored data and metadata, approval
-expiry/content changes, nested wiki navigation and transaction undo.
-Image/video evidence is attached to PRs with `gh --attach`.
+Tests use isolated homes and local Git remotes; none touch your real home,
+GitHub or launchd. Bumping the base image:
 
-`private/`, `.env`, `plow-credentials` and listing settings stay outside Git and
-Docker build contexts. Public evidence uses synthetic files. Real reports and
-secret values remain private on the Mac.
+1. Pick a newer `base-<full sha>` tag from the
+   [registry](https://gallery.ecr.aws/e1h7x4a2/plow-cloud-agents) and read its index digest.
+2. Update the `FROM` line (tag and digest) and its comment.
+3. Copy that commit's `prompt/AGENTS.md` from
+   [plow-openclaw-agent](https://github.com/plow-pbc/plow-openclaw-agent) to
+   `tests/fixtures/base-AGENTS.md`, and update `BASE_COMMIT` and `BASE_SHA256` in
+   `tests/test_prompt_contract.py`.
+4. Run the tests; carry any base sentence they report into `prompt/AGENTS.md`.
+5. Build and run the image tests above, then the manual scenarios.
 
-[Architecture](docs/arquitetura.md), [verification and limits](docs/verificacao.md)
-and [review rules](REVIEW.md) describe the worker, runtime and release boundaries.
+`private/`, `.env`, `plow-credentials` and listing settings stay out of Git and
+the Docker build context. Public evidence uses synthetic files only.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Plow, OpenClaw, Caddy, Mole and Vorssaint keep their
+own licenses.

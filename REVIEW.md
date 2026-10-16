@@ -1,37 +1,60 @@
 # Review Mac Guardian
 
 The README describes the product. Flag drift between its claims, the native
-worker, the conversation prompt and the verification document.
+helper, the conversation prompt, the skill and the verification document.
 
-Personal reports, paths, chat IDs, credentials and real file contents must not
-enter tracked files, Docker contexts, screenshots or fixtures. Evidence uses
-synthetic homes and local Git remotes. A private repository is not a secret vault.
+**Stage:** pre-release, a handful of installs. The helper moves, renames and can
+delete files on someone's own Mac and can push their code to GitHub, so a
+change that weakens a safety gate is blocking even when it looks like polish.
 
-The owner authorizes Mac care. New groups are untrusted and have no guest tools.
-Conversation style never grants access or changes storage and approval policy.
-Keep Mac results private to the owner's conversation. Test configured boundaries
-against the actual compiled base, not a replacement implementation.
+## Blocking checks
 
-Deterministic work belongs in the native scripts. The model interprets ambiguous
-content and communicates decisions. Installation readiness, hashes, preservation,
-approval expiry and recovery checks must not depend on prompt compliance alone.
-Malformed persisted state must fail without silently replacing its contents.
+- **Nothing moves or leaves without the owner's yes.** Moving personal files
+  needs organize consent; uploading code or creating a repository needs
+  github-projects consent; both need a recorded preview from the last hour and
+  the owner's own words. Block any path that reaches `file_moves`,
+  `project_snapshot` or `private_project_repo` without `require_consent`, a
+  background run that writes a consent preview, or a prompt or skill line that
+  lets the model grant consent without the owner's yes.
+- **Nothing is deleted, quarantined or moved on a schedule.** `space` only
+  measures and proposes; `free-space` and `empty-trash` run only with an
+  approval for the exact inventory. Block a stage in `maintain` that deletes or
+  quarantines, a target in `REBUILDABLE` that holds user documents, or a digest
+  that texts the same item every day.
+- **Irreversible means a yes every time.** Purge, Trash, backup deletion,
+  updates and installers go through `request_approval`/`consume_approval`:
+  exact content, one hour, single use. Quarantine frees zero bytes and must
+  never be reported as recovered space.
+- **Every automatic write has a receipt or an undo.** Failed preservation
+  keeps originals in place. Malformed persisted state fails loudly; it is never
+  silently replaced.
+- **Scope stays narrow.** Documents, cloud roots, top-level sync folders, app
+  media libraries, projects, vaults, bundles and placeholders stay excluded,
+  including through aliases. The default organizes Downloads and Desktop only.
+- **What runs on the Mac is what was reviewed.** The install downloads at the
+  image's commit and checks every file against the image's copy. Block a
+  mutable ref, a skipped hash, a shell string built from model input, or an
+  install path that bypasses Latch.
+- **Pins are reviewed changes.** The base `FROM` carries tag and digest, Actions
+  are pinned to commits, and bumping the base updates the prompt fixture.
+- **Privacy.** Personal reports, paths, chat IDs, credentials and real file
+  contents never enter tracked files, Docker contexts, screenshots or fixtures.
+  Evidence uses synthetic homes and local Git remotes. A private repository is
+  not a secret vault.
 
-Each automatic write needs a recovery receipt or complete verified backup.
-Quarantine frees zero bytes. Permanent purge and upgrades without guaranteed
-rollback require exact owner consent. Failed preservation keeps originals in
-place. Keep Documents and cloud roots excluded, including aliases.
+## Contrast pairs
 
-Pins are reviewed changes. The base image and GitHub Actions use immutable
-digests or commits. Only verified images may be published. Keep builds usable
-on Intel and Apple Silicon and verify anonymous access to public releases.
+| Don't flag | Do flag |
+|---|---|
+| Behaviour specific to caring for one person's Mac. That is the product. | A change a sibling owns: boot, identity, transport and usage reporting are the base's (`plow-pbc/plow-openclaw-agent`); Mac permissions are Latch's. Do not copy Meetly's preboot or plugins to fix a base problem. |
+| Bumping a pin to a newer immutable revision. | A prompt edit that drops a sentence `tests/test_prompt_contract.py` keeps from the base. |
 
-Plow owns boot, identity, transport and genuine usage reporting. Inherit its
-entrypoint and reporter. Do not copy Meetly's preboot or scheduling plugin to
-solve a base transport problem. Latch owns Mac permission checks. A fixture
-cannot prove relay connectivity or operate the owner's Mac.
+New groups are untrusted with no guest tools. Conversation style never grants
+access or changes storage, consent or approval policy. Keep Mac results private
+to the owner's conversation. Test configured boundaries against the compiled
+base, not a replacement.
 
-For a change to maintenance, run the safety suite. For image/runtime changes,
-also run the isolated image contract and base probe. Attach actual image/video
-evidence using `gh --attach`. Distinguish fixture results, direct Mac checks,
-relay checks, image publication and Plow admission in the review.
+For a change to maintenance, run the Python suite. For image or runtime changes,
+also run the image contract and base probe. Distinguish fixture results, direct
+Mac checks, relay checks, image publication and Plow admission in the review.
+Attach real image or video evidence with `gh --attach`.

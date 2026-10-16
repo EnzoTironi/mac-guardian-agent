@@ -47,10 +47,10 @@ try:
         assert len(moved["items"]) == 3
         assert all(m.digest(i["destination"]) == i["sha256"] for i in moved["items"])
         capture("A wiki made of your files.", "Titles and subjects came from document content. Every move has an undo receipt.", [
-            "Wiki/Home.md", "Wiki/Projects.md", "Wiki/Documentos/_Index.md",
-            "Wiki/Documentos/northstar/_Index.md", "Wiki/Documentos/northstar/brand-launch-plan.md",
-            "Wiki/Documentos/northstar/invoice-october-2026.txt",
-            "Wiki/Documentos/travel/_Index.md", "Wiki/Documentos/travel/italy-travel-itinerary.md"],
+            "Wiki/Home.md", "Wiki/Projects.md", "Wiki/Documents/_Index.md",
+            "Wiki/Documents/northstar/_Index.md", "Wiki/Documents/northstar/brand-launch-plan.md",
+            "Wiki/Documents/northstar/invoice-october-2026.txt",
+            "Wiki/Documents/travel/_Index.md", "Wiki/Documents/travel/italy-travel-itinerary.md"],
             ["3 files organized", "Content-based names", "SHA-256 verified"])
         snapshot = g.project_snapshot(worktree, "test/private")
         names = fixture.git(fixture.remote, "ls-tree", "-r", "--name-only", snapshot["branch"]).decode().splitlines()

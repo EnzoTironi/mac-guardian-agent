@@ -25,14 +25,14 @@ class WorkspaceCare:
         if any(root == self.home / name or root.is_relative_to(self.home / name) or
                root.resolve().is_relative_to((self.home / name).resolve())
                for name in set(self.policy["excluded_roots"] + list(self.cloud_exclusions))):
-            raise ValueError("Backup local precisa ficar fora de Documents, iCloud e Drive")
+            raise ValueError("The local backup must stay outside Documents, iCloud and Drive")
         root.mkdir(parents=True, exist_ok=True, mode=0o700)
         root.chmod(0o700)
         return root
 
     def receipt_path(self, kind, receipt):
         if not re.fullmatch(r"[a-f0-9]{32}", receipt):
-            raise ValueError("Identificador de recuperação inválido")
+            raise ValueError("Invalid recovery identifier")
         return self._safe(self.backup_folder() / kind / receipt / "receipt.json", self.home)
 
     def request_approval(self, action, payload):
@@ -49,7 +49,7 @@ class WorkspaceCare:
             pending.append(current)
             self._write(self.state / "approvals.json", pending[-1000:])
         return {"request_id": current["id"], "action": action, "requires_user_action": True,
-                "reason": "Procedimento sem restauração garantida exige autorização do proprietário"}
+                "reason": "A procedure without guaranteed restoration needs the owner's authorization"}
 
     @staticmethod
     def approval_valid(item):
@@ -61,11 +61,11 @@ class WorkspaceCare:
 
     def approve(self, request_id, evidence):
         if not evidence.strip():
-            raise ValueError("Registre a autorização explícita do proprietário para este pedido")
+            raise ValueError("Record the owner's explicit authorization for this request")
         pending = self._read(self.state / "approvals.json", [])
         item = next((p for p in pending if p["id"] == request_id), None)
         if item is None or item.get("consumed_at"):
-            raise ValueError("Pedido ausente ou já utilizado")
+            raise ValueError("Request not found or already used")
         item.update(approved_at=self._now(), evidence=evidence[:1000])
         self._write(self.state / "approvals.json", pending)
         return {"request_id": request_id, "approved": True, "valid_minutes": 60}
@@ -90,9 +90,10 @@ class WorkspaceCare:
         if mounts.is_dir() and any(p.name.startswith("GoogleDrive-") for p in mounts.iterdir()):
             providers.append("google-drive")
         return {"configured": bool(saved.get("provider")), "provider": saved.get("provider"),
-                "detected": providers, "needs_question": not saved.get("provider") and not saved.get("question_asked"),
+                "detected": providers, # Cloud transfer is not implemented, so the owner is not asked about it.
+                "needs_question": False,
                 "awaiting_answer": not saved.get("provider"),
-                "question": "Você tem Google Drive ou iCloud que eu possa usar para arquivos comuns? Segredos ficam somente no backup local.",
+                "question": "Do you have Google Drive or iCloud I can use for ordinary files? Secrets stay in the local backup only.",
                 "destinations": saved.get("destinations", []), "secrets_allowed": False}
 
     def configure_cloud(self, provider=None, roots=(), asked=False):
@@ -101,19 +102,19 @@ class WorkspaceCare:
             saved["question_asked"] = True
         if provider is not None:
             if provider not in ("icloud", "google-drive", "both", "none"):
-                raise ValueError("Provedor inválido")
+                raise ValueError("Invalid provider")
             destinations = []
             for root in roots:
                 path = Path(root).expanduser().resolve()
                 cloud_roots = [self.home / "Library/Mobile Documents/com~apple~CloudDocs",
                                self.home / "Library/CloudStorage"]
                 if not any(path.is_relative_to(p.resolve()) and path != p.resolve() for p in cloud_roots):
-                    raise ValueError("Escolha uma pasta específica dentro do armazenamento cloud")
+                    raise ValueError("Choose a specific folder inside the cloud storage")
                 if path.name.lower() in ("documents", "desktop"):
-                    raise ValueError("Documents e Mesa não são destinos de backup")
+                    raise ValueError("Documents and Desktop are not backup destinations")
                 destinations.append(str(path))
             if provider == "none" and destinations:
-                raise ValueError("Armazenamento local não usa destinos cloud")
+                raise ValueError("Local-only storage has no cloud destinations")
             saved.update(provider=provider, destinations=destinations, configured_at=self._now())
         self._write(self.state / "cloud.json", saved)
         return self.cloud_status()
@@ -127,14 +128,14 @@ class WorkspaceCare:
         for path in files:
             path = self._safe(path, self.home)
             if self.excluded(path) or not path.is_file() or path.stat().st_nlink != 1:
-                raise ValueError("Origem de segredo protegida ou indisponível")
+                raise ValueError("Secret source is protected or unavailable")
             expected = self._hash(path)
             identity = hashlib.sha256(str(path).encode()).hexdigest()[:24]
             target = self._safe(root / identity / expected / "content", self.home)
             target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             if target.exists():
                 if self._hash(target) != expected:
-                    raise ValueError("Backup local existente divergiu")
+                    raise ValueError("Existing local backup diverged")
             else:
                 with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as stream:
                     temporary = Path(stream.name)
@@ -144,7 +145,7 @@ class WorkspaceCare:
                     os.fsync(stream.fileno())
                 try:
                     if self._hash(temporary) != expected or self._hash(path) != expected:
-                        raise ValueError("Segredo mudou durante o backup")
+                        raise ValueError("Secret changed during the backup")
                     os.link(temporary, target, follow_symlinks=False)
                 finally:
                     temporary.unlink(missing_ok=True)
@@ -157,13 +158,13 @@ class WorkspaceCare:
 
     def restore_secret(self, identity, version):
         if not re.fullmatch(r"[a-f0-9]{24}", identity) or not re.fullmatch(r"[a-f0-9]{64}", version):
-            raise ValueError("Versão de segredo inválida")
+            raise ValueError("Invalid secret version")
         root = self._safe(self.backup_folder() / "Secrets" / identity / version, self.home)
         receipt = self._read(root / "receipt.json")
         source = self._safe(Path(receipt["source"]), self.home)
         content = root / "content"
         if self._hash(content) != receipt["sha256"] or source.exists() or source.is_symlink():
-            raise ValueError("Restauração inválida ou sobrescreveria a origem")
+            raise ValueError("Invalid restore, or it would overwrite the source")
         source.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         with source.open("xb") as stream, content.open("rb") as original:
             shutil.copyfileobj(original, stream)
@@ -181,7 +182,7 @@ class WorkspaceCare:
         self._write(receipt_path, receipt)
         # Same-volume rename preserves all data, links, modes and extended attributes.
         if source.stat().st_dev != destination.parent.stat().st_dev:
-            raise ValueError("Quarentena precisa estar no mesmo volume")
+            raise ValueError("Quarantine must be on the same volume")
         source.rename(destination)
         receipt["state"] = "quarantined"
         self._write(receipt_path, receipt)
@@ -194,9 +195,9 @@ class WorkspaceCare:
         source = self._safe(Path(receipt["source"]), self.home)
         data = self._safe(receipt_path.parent / "data", self.home)
         if source.exists() or source.is_symlink() or not data.is_dir():
-            raise ValueError("Restauração sobrescreveria dados ou quarentena não está disponível")
+            raise ValueError("Restoring would overwrite data, or the quarantine is unavailable")
         if self._busy(data):
-            raise ValueError("Backup em uso")
+            raise ValueError("Backup is in use")
         source.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         data.rename(source)
         receipt["state"] = "restored"
@@ -208,13 +209,13 @@ class WorkspaceCare:
         receipt = self._read(receipt_path)
         path = self._safe(receipt_path.parent / "data", self.home)
         if receipt["state"] != "quarantined" or not path.is_dir():
-            raise ValueError("Quarentena não está disponível para exclusão")
+            raise ValueError("Quarantine is not available for deletion")
         inventory = self.tree_manifest(path)
         payload = {"receipt": receipt_id, "inventory": hashlib.sha256(json.dumps(inventory, sort_keys=True).encode()).hexdigest()}
         if not apply:
             return self.request_approval("purge_quarantine", payload) | {"source": receipt["source"], "irreversible": True}
         if self._busy(path) or not self.consume_approval("purge_quarantine", payload, approval):
-            raise ValueError("Exclusão permanente exige autorização recente para este conteúdo")
+            raise ValueError("Permanent deletion needs a recent authorization for this exact content")
         shutil.rmtree(path)
         receipt.update(state="purged", purged_at=self._now())
         self._write(receipt_path, receipt)
@@ -234,19 +235,19 @@ class WorkspaceCare:
                 link = stat.S_ISLNK(info.st_mode)
                 directory = stat.S_ISDIR(info.st_mode)
                 if not (link or directory or stat.S_ISREG(info.st_mode)):
-                    raise ValueError("Arquivo especial exige preservação em seu local")
+                    raise ValueError("Special files stay in place")
                 if not link and not directory and info.st_nlink != 1:
-                    raise ValueError("Hardlink exige preservação em seu local")
+                    raise ValueError("Hard links stay in place")
                 target = os.readlink(path) if link else None
                 total += 0 if directory or link else info.st_size
                 if time.monotonic() > deadline or total > self.policy["worktree_archive_max_mib"] * 1024**2:
-                    raise ValueError("Arquivo local excede o limite de backup; origem preservada")
+                    raise ValueError("Local archive exceeds the backup limit; source preserved")
                 attrs = {}
                 if hasattr(os, "listxattr"):
                     for key in os.listxattr(path, follow_symlinks=False):
                         value = os.getxattr(path, key, follow_symlinks=False)
                         if len(value) > 1024**2:
-                            raise ValueError("Metadados grandes demais; origem preservada")
+                            raise ValueError("Metadata too large; source preserved")
                         attrs[key] = base64.b64encode(value).decode()
                 result[path.relative_to(root).as_posix()] = {"sha256": hashlib.sha256(target.encode()).hexdigest() if link else
                     hashlib.sha256(b"").hexdigest() if directory else self._hash(path),
@@ -268,7 +269,7 @@ class WorkspaceCare:
                               stderr=subprocess.PIPE, env=safe_env, timeout=timeout)
         if proc.returncode:
             # Git errors can contain a credential-bearing remote or file contents.
-            raise RuntimeError("Git não concluiu " + args[0] + "; origem preservada")
+            raise RuntimeError("Git did not finish " + args[0] + "; source preserved")
         return proc.stdout
 
     def project_files(self, project, ref=None):
@@ -325,7 +326,7 @@ class WorkspaceCare:
                 continue
             total += size
             if total > self.policy["project_snapshot_max_mib"] * 1024**2 or time.monotonic() > deadline:
-                raise ValueError("Snapshot excedeu o limite; projeto continua local")
+                raise ValueError("Snapshot exceeded the limit; the project stays local")
             data = self.git_run(project, ["cat-file", "blob", blob]) if ref else path.read_bytes()
             if self.secret_content.search(data):
                 blocked.append({"path": name, "reason": "secret_local_only"})
@@ -338,38 +339,41 @@ class WorkspaceCare:
         return manifest, blocked, secret_files
 
     def private_project_repo(self):
+        # Creating or using a GitHub repository sends code off this Mac.
+        self.require_consent("github-projects")
         configured = self.policy["project_backup_repo"]
         owner_result = self._command(["gh", "api", "user", "--jq", ".login"], 20)
         if not owner_result["ok"] or not re.fullmatch(r"[A-Za-z0-9-]+", owner_result["stdout"].strip()):
-            raise RuntimeError("GitHub autenticado indisponível; projetos permanecem locais")
+            raise RuntimeError("Authenticated GitHub unavailable; projects stay local")
         owner = owner_result["stdout"].strip()
         repo = configured or owner + "/mac-guardian-project-backups"
         if not re.fullmatch(re.escape(owner) + r"/[A-Za-z0-9_.-]+", repo):
-            raise ValueError("Snapshots automáticos precisam de repositório privado do proprietário")
+            raise ValueError("Automatic snapshots need the owner's own private repository")
         result = self._command(["gh", "repo", "view", repo, "--json", "isPrivate,url"], 30)
         if not result["ok"]:
             if configured or not re.search(r"404|not found|could not resolve", result["stderr"], re.I):
-                raise RuntimeError("Repositório privado indisponível")
+                raise RuntimeError("Private repository unavailable")
             created = self._command(["gh", "repo", "create", repo, "--private"], 60)
             if not created["ok"]:
-                raise RuntimeError("Criação do repositório privado não foi confirmada")
+                raise RuntimeError("Creation of the private repository was not confirmed")
             result = self._command(["gh", "repo", "view", repo, "--json", "isPrivate,url"], 30)
         if not result["ok"] or not json.loads(result["stdout"])["isPrivate"]:
-            raise ValueError("Snapshots de trabalho inédito exigem GitHub privado")
+            raise ValueError("Snapshots of unpublished work require a private GitHub repository")
         if not configured:
             self.policy["project_backup_repo"] = repo
             self._write(self.state / "policy.json", self.policy)
         return repo
 
     def project_snapshot(self, project, repo, ref=None):
+        self.require_consent("github-projects")
         project = self._safe(Path(project).expanduser(), self.home)
         if self.excluded(project):
-            raise ValueError("Projeto em pasta excluída")
+            raise ValueError("Project is in an excluded folder")
         if not re.fullmatch(r"[A-Za-z0-9-]+/[A-Za-z0-9_.-]+", repo):
-            raise ValueError("Repositório inválido")
+            raise ValueError("Invalid repository")
         visibility = self._command(["gh", "repo", "view", repo, "--json", "isPrivate,url"], 30)
         if not visibility["ok"] or not json.loads(visibility["stdout"]).get("isPrivate"):
-            raise ValueError("Snapshots exigem repositório privado verificado")
+            raise ValueError("Snapshots require a verified private repository")
         manifest, blocked, secrets = self.project_manifest(project, ref)
         local = self.local_secret_backup(project, secrets)
         # Include ignored secrets, but do not send any ignored files to GitHub.
@@ -377,7 +381,7 @@ class WorkspaceCare:
         if ignored_secrets:
             local["count"] += self.local_secret_backup(project, ignored_secrets)["count"]
         if not manifest:
-            raise ValueError("Nenhum arquivo sem segredos disponível para snapshot")
+            raise ValueError("No secret-free files are available for a snapshot")
         key = hashlib.sha256(str(project).encode()).hexdigest()[:16]
         variant = hashlib.sha256((ref or "working").encode()).hexdigest()[:12]
         branch = "mac-guardian/" + key + "/" + variant
@@ -397,7 +401,7 @@ class WorkspaceCare:
             for name, item in manifest.items():
                 data = self.git_run(project, ["cat-file", "blob", item["blob"]]) if ref else (project / name).read_bytes()
                 if hashlib.sha256(data).hexdigest() != item["sha256"]:
-                    raise ValueError("Projeto mudou durante o snapshot")
+                    raise ValueError("Project changed during the snapshot")
                 blob = self.git_run(checkout, ["hash-object", "-w", "--stdin", "--no-filters"], data=data).decode().strip()
                 rows.append(("100755" if item["executable"] else "100644").encode() + b" " + blob.encode() + b"\t" + name.encode() + b"\0")
             self.git_run(checkout, ["update-index", "-z", "--index-info"], data=b"".join(rows))
@@ -412,15 +416,15 @@ class WorkspaceCare:
             restored = Path(tmp) / "restored"
             self.git_run(checkout, [*auth_config, "clone", "--quiet", "--no-checkout", "--depth", "1", "--single-branch", "--branch", branch, remote, str(restored)])
             if self.git_run(restored, ["rev-parse", "HEAD"]).decode().strip() != commit:
-                raise ValueError("Branch remota mudou; remoção cancelada")
+                raise ValueError("Remote branch changed; removal cancelled")
             restored_files = self.project_files(restored, "HEAD")
             restored_manifest = {name: hashlib.sha256(self.git_run(restored, ["cat-file", "blob", blob])).hexdigest()
                                  for name, blob in restored_files}
             if restored_manifest != {name: item["sha256"] for name, item in manifest.items()}:
-                raise ValueError("Restauração remota divergiu; remoção cancelada")
+                raise ValueError("Remote restore diverged; removal cancelled")
             current, _, _ = self.project_manifest(project, ref)
             if current != manifest:
-                raise ValueError("Origem mudou; próxima rotina fará novo snapshot")
+                raise ValueError("Source changed; the next routine takes a new snapshot")
         receipt = {"at": self._now(), "project": str(project), "ref": ref, "repo": repo, "branch": branch,
                    "commit": commit, "verified": True, "files": len(manifest), "excluded": blocked,
                    "local_secret_backups": local["count"], "source_branch_unchanged": True,
@@ -435,7 +439,7 @@ class WorkspaceCare:
         """Store unpublished refs, the original index and its staged blobs locally."""
         index = Path(self.git_run(project, ["rev-parse", "--path-format=absolute", "--git-path", "index"]).decode().strip())
         if self.git_run(project, ["rev-parse", "--shared-index-path"]).strip():
-            raise ValueError("Índice dividido exige preservação no local")
+            raise ValueError("A split index stays in place")
         shutil.copy2(index, folder / "index")
         (folder / "index").chmod(0o600)
         head = self.git_run(project, ["rev-parse", "HEAD"]).decode().strip()
@@ -457,7 +461,7 @@ class WorkspaceCare:
         config = common / "config"
         self._safe(config, self.home) if config.is_relative_to(self.home) else None
         if config.is_symlink() or not config.is_file():
-            raise ValueError("Configuração Git indisponível para recuperação")
+            raise ValueError("Git configuration unavailable for recovery")
         shutil.copy2(config, folder / "git-config")
         (folder / "git-config").chmod(0o600)
         return {"head": head, "recovery_ref": recovery_ref, "bundle_sha256": self._hash(bundle),
@@ -467,23 +471,23 @@ class WorkspaceCare:
         """Archive complete data before removing an idle ordinary Git worktree."""
         path = self._safe(path, self.home)
         if path.is_relative_to(self.home / ".codex/worktrees"):
-            raise ValueError("Worktree do Codex exige arquivamento nativo na conversa proprietária")
+            raise ValueError("Codex worktrees require Codex's own archive in the owning conversation")
         if not snapshot.get("verified") or snapshot.get("project") != str(path):
-            raise ValueError("Snapshot remoto deste worktree precisa estar verificado")
+            raise ValueError("This worktree's remote snapshot must be verified")
         if not (path / ".git").is_file() or (path / ".gitmodules").exists() or self._busy(path):
-            raise ValueError("Worktree principal, submódulos ou arquivos em uso são protegidos")
+            raise ValueError("Primary worktrees, submodules and files in use are protected")
         listing = self.git_run(path, ["worktree", "list", "--porcelain", "-z"]).decode()
         block = next((b for b in listing.split("\0\0") if b.startswith("worktree " + str(path) + "\0")), "")
         if not block or "\0locked" in block or "\0prunable" in block or listing.startswith("worktree " + str(path) + "\0"):
-            raise ValueError("Worktree bloqueado, principal ou inconsistente")
+            raise ValueError("Worktree is locked, primary or inconsistent")
         manifest = self.tree_manifest(path, exclude_git=True)
         cutoff = time.time() - self.policy["worktree_age_days"] * 86400
         if path.stat().st_mtime > cutoff or any(i["mtime_ns"] / 1e9 > cutoff for i in manifest.values()):
-            raise ValueError("Worktree recente")
+            raise ValueError("Worktree is recent")
         original_manifest, _, _ = self.project_manifest(path)
         fingerprint = hashlib.sha256(json.dumps(original_manifest, sort_keys=True).encode()).hexdigest()
         if fingerprint != snapshot["fingerprint"]:
-            raise ValueError("Worktree mudou desde o backup remoto")
+            raise ValueError("Worktree changed since the remote backup")
         receipt_id = uuid.uuid4().hex
         receipt_path = self.receipt_path("Worktrees", receipt_id)
         folder = receipt_path.parent
@@ -507,14 +511,14 @@ class WorkspaceCare:
         with zipfile.ZipFile(archive) as z:
             if z.testzip() or {name.rstrip("/"): hashlib.sha256(z.read(name)).hexdigest() for name in z.namelist()} != {
                     name: item["sha256"] for name, item in manifest.items()}:
-                raise ValueError("Arquivo local de recuperação divergiu")
+                raise ValueError("Local recovery archive diverged")
         receipt = {"id": receipt_id, "at": self._now(), "source": str(path), "common": common,
                    "branch": branch, "history": history, "files": manifest, "state": "prepared",
                    "archive_sha256": self._hash(archive), "snapshot": snapshot}
         self._write(receipt_path, receipt)
         index = Path(self.git_run(path, ["rev-parse", "--path-format=absolute", "--git-path", "index"]).decode().strip())
         if self._busy(path) or self.tree_manifest(path, exclude_git=True) != manifest or self._hash(index) != history["index_sha256"] or self.git_run(path, ["rev-parse", "HEAD"]).decode().strip() != history["head"]:
-            raise ValueError("Worktree mudou ou entrou em uso; remoção cancelada")
+            raise ValueError("Worktree changed or came into use; removal cancelled")
         # --force is confined to a fully verified recovery archive, never a failed check.
         self.git_run(path, ["worktree", "remove", "--force", str(path)])
         receipt["state"] = "archived"
@@ -529,9 +533,9 @@ class WorkspaceCare:
         source = self._safe(Path(receipt["source"]), self.home)
         folder = receipt_path.parent
         if source.exists() or source.is_symlink():
-            raise ValueError("Restauração sobrescreveria dados")
+            raise ValueError("Restoring would overwrite data")
         if self._hash(folder / "files.zip") != receipt["archive_sha256"] or self._hash(folder / "history.bundle") != receipt["history"]["bundle_sha256"] or self._hash(folder / "index") != receipt["history"]["index_sha256"] or self._hash(folder / "git-config") != receipt["history"]["config_sha256"]:
-            raise ValueError("Backup de recuperação alterado")
+            raise ValueError("Recovery backup was modified")
         common = Path(receipt["common"])
         source.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         if common.is_dir():
@@ -556,7 +560,7 @@ class WorkspaceCare:
                     pass
         with zipfile.ZipFile(folder / "files.zip") as z:
             if {name.rstrip("/") for name in z.namelist()} != set(receipt["files"]):
-                raise ValueError("Manifesto de recuperação divergiu")
+                raise ValueError("Recovery manifest diverged")
             for name, item in sorted(receipt["files"].items(), key=lambda row: (row[1]["kind"] == "symlink", row[0])):
                 destination = self._safe(source / name, source)
                 destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -565,7 +569,7 @@ class WorkspaceCare:
                     continue
                 data = z.read(name)
                 if hashlib.sha256(data).hexdigest() != item["sha256"]:
-                    raise ValueError("Arquivo de recuperação alterado")
+                    raise ValueError("Recovery file was modified")
                 if item["kind"] == "symlink":
                     destination.symlink_to(data.decode())
                 else:
@@ -581,13 +585,13 @@ class WorkspaceCare:
         index = Path(self.git_run(source, ["rev-parse", "--path-format=absolute", "--git-path", "index"]).decode().strip())
         shutil.copy2(folder / "index", index)
         if self.tree_manifest(source, exclude_git=True) != receipt["files"]:
-            raise ValueError("Verificação da restauração divergiu")
+            raise ValueError("Restore verification diverged")
         receipt["state"] = "restored"
         self._write(receipt_path, receipt)
         return {"restored": str(source), "receipt": receipt_id, "verified": True,
                 "head": receipt["history"]["head"], "branch_before": receipt["branch"], "detached": detached}
 
-    def care_for_projects(self, apply=True, deadline=None):
+    def care_for_projects(self, apply=True, deadline=None, record=False):
         deadline = deadline or time.monotonic() + self.policy["maintenance_max_seconds"]
         candidates = sorted(self.projects(), key=str)
         visits = self._read(self.state / "project-visits.json", {})
@@ -597,11 +601,21 @@ class WorkspaceCare:
         candidates.sort(key=oldest)
         results = []
         if not apply:
-            return {"items": [{"project": str(p), "status": "planned"} for p in candidates], "uploaded": False}
-        # Local protection works even when GitHub is temporarily unavailable.
+            preview = {"items": [{"project": str(p), "status": "planned"} for p in candidates], "uploaded": False,
+                       "repository": self.policy["project_backup_repo"] or "YOUR-GITHUB-LOGIN/mac-guardian-project-backups",
+                       "visibility": "private", "sent": "project files without detected secrets, ignored files or build output",
+                       "kept_local": "secrets, ignored files and build output",
+                       "secret_detection": "heuristic: names and common key formats, not a guarantee"}
+            if record:
+                self._write(self.state / "project-plan.json", {"at": self._now(), **preview})
+            return preview
+        # Local protection works even when GitHub is temporarily unavailable or not approved.
         repo = None
         github_error = None
-        if shutil.which("gh"):
+        consented = self.consent_granted("github-projects")
+        if not consented:
+            github_error = "awaiting_consent: the owner has not approved private GitHub snapshots"
+        elif shutil.which("gh"):
             try:
                 repo = self.private_project_repo()
             except (ValueError, RuntimeError, OSError, TimeoutError, subprocess.TimeoutExpired) as e:
@@ -616,7 +630,7 @@ class WorkspaceCare:
                 local = self.local_secret_backup(project, sorted(set(secrets)))
                 if not repo:
                     results.append({"project": str(project), "status": "local_only", "secrets": local["count"],
-                                    "reason": github_error or "GitHub não disponível"})
+                                    "reason": github_error or "GitHub unavailable"})
                     continue
                 snapshot = self.project_snapshot(project, repo)
                 extra = []
@@ -645,4 +659,4 @@ class WorkspaceCare:
         self._write(self.state / "project-visits.json", visits)
         self._write(self.state / "project-ref-cursors.json", cursors)
         return {"items": results, "verified": sum(i["status"] == "verified" for i in results),
-                "github_repo": repo, "scanned": len(candidates)}
+                "github_repo": repo, "scanned": len(candidates), "github_consent": consented}

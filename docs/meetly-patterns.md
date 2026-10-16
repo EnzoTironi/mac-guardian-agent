@@ -10,6 +10,7 @@ Reference: [Meetly at c1491ec9](https://github.com/plow-pbc/meetly-openclaw-agen
 | Immutable base and supply-chain pins | The same published Plow base digest supports Intel and Apple Silicon. GitHub Actions are pinned to commits. The official boot and genuine five-minute reporter remain inherited. |
 | CI and reproducible image publication | Ubuntu/macOS safety tests and a credential-free base probe gate GHCR publication. Releases include both architectures, SHA tags and an immutable digest receipt. `latest` is opt-in. |
 | Loopback development access | `HOST_PORT` selects the local proxy port. The runtime readiness check reads `/readyz` without competing for the state lock. |
+| The base prompt contract is kept word for word | `prompt/AGENTS.md` carries the base sentences; `tests/test_prompt_contract.py` checks them against the base prompt at the pinned commit. |
 | Reviewer rules distinguish promises from evidence | `REVIEW.md` protects privacy, recovery, ownership and documentation accuracy. Architecture and verification documents describe the current implementation. |
 
 Meetly's calendar tools, guest scheduling, travel, contact state and setup plugin

@@ -4,8 +4,12 @@ import os
 from pathlib import Path
 import tempfile
 import time
+import sys
 import unittest
 from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).parent))
+import consent_helper  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("guardian_volumes", Path(__file__).parents[1] / "native/mac_guardian.py")
 m = importlib.util.module_from_spec(spec)
@@ -19,6 +23,7 @@ class VolumeTests(unittest.TestCase):
         self.home = Path(self.tmp.name).resolve() / "home"
         self.home.mkdir()
         self.g = m.Guardian(self.home)
+        consent_helper.grant_all(self.g)
         self.busy = patch.object(m, "in_use", return_value=False)
         self.busy.start()
         self.addCleanup(self.busy.stop)

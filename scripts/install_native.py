@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--uninstall", action="store_true", help="Remove jobs; preserve reports, wiki and code")
 args = parser.parse_args()
 if sys.platform != "darwin":
-    sys.exit("Este componente exige macOS.")
+    sys.exit("This component requires macOS.")
 project = Path(__file__).resolve().parents[1]
 home = Path.home()
 app = home / "Library/Application Support/MacGuardian"
@@ -24,7 +24,7 @@ if args.uninstall:
     for label in labels:
         subprocess.run(["launchctl", "bootout", f"{domain}/{label}"], capture_output=True)
         (agents / (label + ".plist")).unlink(missing_ok=True)
-    print("Rotinas removidas. Dados preservados.")
+    print("Routines removed. Data preserved.")
     sys.exit(0)
 app.mkdir(parents=True, exist_ok=True, mode=0o700)
 app.chmod(0o700)
