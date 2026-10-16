@@ -1976,7 +1976,7 @@ class Guardian(WorkspaceCare):
             return receipt
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--home", help="Local home root; also used by isolated tests")
     parser.add_argument("--state", help="Private state directory")
@@ -2056,7 +2056,11 @@ def main():
     backup.add_argument("--source", required=True)
     backup.add_argument("--repo", required=True)
     backup.add_argument("--offload", action="store_true")
-    args = parser.parse_args()
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
     try:
         if sys.platform != "darwin" and not args.home:
             raise ValueError("The native component requires macOS; --home is only for isolated tests")
